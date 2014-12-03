@@ -4,7 +4,7 @@
 ! leaves the domain or dies a gap is created in the list.  
 ! The locations of such gaps are stored in the gaplist, the total number 
 ! of such gaps is ngaps.  A cell entering the domain is allocated an index 
-! from the tail of this list, if ngaps > 0, or else it is added to the end of the cell list.
+! from the tail of this list, if ngaps > 0, or else it is added to the end of the cell list. 
 
 module tropho_mod
 use global

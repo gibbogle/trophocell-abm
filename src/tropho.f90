@@ -1,10 +1,10 @@
 ! Implementing a list of cells:
 ! In this version the cells in the domain are stored in a list, while the
 ! occupancy array holds the indices of cells in the list.  When a cell
-! leaves the domain or dies a gap is created in the list.  
-! The locations of such gaps are stored in the gaplist, the total number 
-! of such gaps is ngaps.  A cell entering the domain is allocated an index 
-! from the tail of this list, if ngaps > 0, or else it is added to the end of the cell list. 
+! leaves the domain or dies a gap is created in the list.
+! The locations of such gaps are stored in the gaplist, the total number
+! of such gaps is ngaps.  A cell entering the domain is allocated an index
+! from the tail of this list, if ngaps > 0, or else it is added to the end of the cell list.
 
 module tropho_mod
 use global
@@ -140,7 +140,7 @@ lastbalancetime = 0
 !    allocate(cytp(NX,NY,NZ,N_CYT))
 !endif
 
-#if .false.
+#if (0)
 if (use_diffusion) then
     if (.not.use_cytokines) then
         write(logmsg,*) 'Cannot use_diffusion without use_cytokines'
@@ -470,7 +470,18 @@ do k = 1,n
 enddo
 end subroutine
 
+!-----------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------
+subroutine save_positions
+integer :: kcell, site(3)
 
+write(nflog,'(i6,$)') istep
+do kcell = 1,20
+	site = cell_list(kcell)%site
+	write(nflog,'(2i5,$)') site(1:2)
+enddo
+write(nflog,*)
+end subroutine
 
 
 !-----------------------------------------------------------------------------------------
@@ -598,7 +609,7 @@ integer :: i, k, kcell, region
 !enddo
 end subroutine
 
-!-------------------------------------------------------------------------------- 
+!--------------------------------------------------------------------------------
 ! x, y, z, gen, CFSE, CD69, S1PR1, stim, stimrate
 !--------------------------------------------------------------------------------
 subroutine write_FACS(hour)	!bind(C)	!(filename)
@@ -630,7 +641,7 @@ open(nffacs, file=filename, status='replace')
 close(nffacs)
 end subroutine
 
-!-------------------------------------------------------------------------------- 
+!--------------------------------------------------------------------------------
 ! Pass a list of cell positions and associated data
 !--------------------------------------------------------------------------------
 subroutine get_scene(nTC_list,TC_list) BIND(C)
@@ -730,7 +741,7 @@ end subroutine
 !-----------------------------------------------------------------------------------------
 !-----------------------------------------------------------------------------------------
 subroutine simulate_step(res) BIND(C)
-!DEC$ ATTRIBUTES DLLEXPORT :: simulate_step 
+!DEC$ ATTRIBUTES DLLEXPORT :: simulate_step
 use, intrinsic :: iso_c_binding
 integer(c_int) :: res
 integer :: hour, kpar=0
@@ -742,8 +753,10 @@ dbug = .false.
 ok = .true.
 istep = istep + 1
 tnow = istep*DELTA_T
+call save_positions
 if (mod(istep,240) == 0) then
-	write(*,*) 'simulate_step: ',istep
+	write(logmsg,*) 'simulate_step: ',istep
+	call logger(logmsg)
     if (TAGGED_LOG_PATHS) then
 		call add_log_paths
 	endif
@@ -865,7 +878,7 @@ par_zig_init = .false.
 Mnodes = 1
 inputfile = infile
 outputfile = outfile
-write(logmsg,*) 'ncpu: ',Mnodes 
+write(logmsg,*) 'ncpu: ',Mnodes
 call logger(logmsg)
 
 #if defined(OPENMP) || defined(_OPENMP)
@@ -926,7 +939,7 @@ end subroutine
 
 !-----------------------------------------------------------------------------------------
 ! The test case has two chemokines and two associated receptor types.
-! Each receptor has the same strength.  The difference in the effects of the two 
+! Each receptor has the same strength.  The difference in the effects of the two
 ! chemokine-receptor pairs is determined by the chemokine gradient parameters.
 !-----------------------------------------------------------------------------------------
 subroutine chemokine_setup
@@ -961,7 +974,7 @@ chemo(2)%name = 'Chemokine_2'
 if (chemo(2)%used) then
 	if (allocated(chemo(2)%grad)) deallocate(chemo(2)%grad)
 	allocate(chemo(2)%grad(3,NX,NY,NZ))
-	rad = grad_dir(2)*PI/180
+	rad =  grad_dir(2)*PI/180
 	g(1) = grad_amp(2)*cos(rad)
 	g(2) = grad_amp(2)*sin(rad)
 	g(3) = 0
@@ -1024,7 +1037,7 @@ if (allocated(life_dist)) deallocate(life_dist)
 if (allocated(divide_dist)) deallocate(divide_dist)
 if (allocated(chemo_p)) deallocate(chemo_p)
 
-#if .false.
+#if (0)
 if (allocated(cytp)) deallocate(cytp)
 if (allocated(xminmax)) deallocate(xminmax)
 if (allocated(inblob)) deallocate(inblob)
@@ -1065,7 +1078,7 @@ end subroutine
 !-----------------------------------------------------------------------------------------
 !-----------------------------------------------------------------------------------------
 subroutine terminate_run(res) BIND(C)
-!DEC$ ATTRIBUTES DLLEXPORT :: terminate_run 
+!DEC$ ATTRIBUTES DLLEXPORT :: terminate_run
 use, intrinsic :: iso_c_binding
 integer(c_int) :: res
 character*(8), parameter :: quit = '__EXIT__'
@@ -1127,20 +1140,24 @@ character*(128) :: infile, outfile
 logical :: ok, success, isopen
 integer :: i, res
 
+write(*,*) 'execute: inbuflen, outbuflen: ',inbuflen, outbuflen
 use_CPORT1 = .false.	! DIRECT CALLING FROM Fortran, C++
 infile = ''
 do i = 1,inbuflen
 	infile(i:i) = infile_array(i)
 enddo
+write(*,*) infile
 outfile = ''
 do i = 1,outbuflen
 	outfile(i:i) = outfile_array(i)
 enddo
 
+write(*,*) 'open log file'
 inquire(unit=nflog,OPENED=isopen)
 if (.not.isopen) then
-    open(nflog,file='para.log',status='replace')
+    open(nflog,file='tropho.log',status='replace')
 endif
+write(*,*) 'opened log file'
 awp_0%is_open = .false.
 awp_1%is_open = .false.
 
@@ -1172,7 +1189,7 @@ call logger(logmsg)
 
 write(logmsg,*) 'inputfile:  ', infile
 call logger(logmsg)
-write(logmsg,*) 'outputfile: ', outfile 
+write(logmsg,*) 'outputfile: ', outfile
 call logger(logmsg)
 if (use_tcp) then
 	call connecter(ok)
@@ -1181,6 +1198,7 @@ if (use_tcp) then
 		return
 	endif
 endif
+write(*,*) 'do setup'
 call setup(ncpu,infile,outfile,ok)
 if (ok) then
 	clear_to_send = .true.

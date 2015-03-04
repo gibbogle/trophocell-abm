@@ -85,10 +85,10 @@ protected:
     void closeEvent(QCloseEvent *event);
 
 private slots:
-    void on_cbox_record_toggled(bool);
+//    void on_cbox_record_toggled(bool);
     void on_actionShow_2D_gradient_field_triggered();
     void on_actionShow_3D_gradient_field_triggered();
-    void on_line_SPECIAL_CASE_textEdited(QString);
+//    void on_line_SPECIAL_CASE_textEdited(QString);
     void on_checkBox_FACS_PLOT_toggled(bool checked);
     void newFile();
     void open();
@@ -116,7 +116,8 @@ private slots:
 	double getMaximum(RESULT_SET *, double *);
 	void addGraph();
 	void removeGraph();
-	void removeAllGraphs();
+    void removeGraphs();
+    void removeAllGraphs();
 	void playVTK();
 	void setVTKSpeed();
 	void saveSnapshot();

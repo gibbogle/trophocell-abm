@@ -131,7 +131,8 @@ integer :: ncpu_dummy, ntgui, idelay, iwrap, ichemo_1, ichemo_2
 !logical, parameter :: use_chemo = .false.
 
 ok = .false.
-write(*,*) 'Read cell parameter file: ',inputfile
+write(logmsg,*) 'Read cell parameter file: ',inputfile
+call logger(logmsg)
 !call logger('Reading cell parameter file')
 !call logger(inputfile)
 open(nfcell,file=inputfile,status='old')
@@ -156,6 +157,8 @@ read(nfcell,*) grad_dir(1)					! chemokine #1 gradient direction (deg)
 read(nfcell,*) ichemo_2						! switch for chemokine #2
 read(nfcell,*) grad_amp(2)					! chemokine #2 gradient amplitude
 read(nfcell,*) grad_dir(2)					! chemokine #2 gradient direction (deg)
+read(nfcell,*) BG_flow_amp				    ! background velocity amplitude (um/min)
+read(nfcell,*) BG_flow_dir		 	        ! background velocity direction (deg)
 close(nfcell)
 
 call logger('Finished reading cell parameter file')
@@ -209,7 +212,7 @@ close(nfcell)
 end subroutine
 
 !----------------------------------------------------------------------------------------
-! Save parameters (values hard-coded, not yet in input file) 
+! Save parameters (values hard-coded, not yet in input file)
 !----------------------------------------------------------------------------------------
 subroutine save_parameters
 
@@ -259,7 +262,7 @@ endif
 ! Now we need to make a site unavailable
 ! Remove (make OUTSIDE) a boundary site near to the specified site.
 ! The criteria for selection of a site to remove are that it is on the blob boundary,
-! preferably "sticking out", and that it is vacant.  A site may be made vacant by 
+! preferably "sticking out", and that it is vacant.  A site may be made vacant by
 ! moving a cell to a nearby available site.
 ! One way to handle this is to maintain a count of the number of sites to be added(removed).
 ! At regular intervals the counts can be aggregated and if the total is big enough (+ or -)

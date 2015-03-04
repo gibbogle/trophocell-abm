@@ -126,6 +126,7 @@ void SocketHandler::processor()
 	socket->close();
 	tcpServer->close();
 	if (port == CPORT0) {
+        LOG_MSG("emit sh_disconnected");
 		emit sh_disconnected();		// Is it right that both threads emit this?
 	}
 }
@@ -149,6 +150,7 @@ void ExecThread::run()
 
     LOG_MSG("Invoking DLL...");
     infile_path = inputFile;
+    LOG_QMSG("infile_path: " + infile_path);
 	QString casename = QFileInfo(inputFile).baseName();
 	len_infile = infile_path.length();
 	std::string std_infile = infile_path.toStdString();
@@ -159,10 +161,16 @@ void ExecThread::run()
 	outfile = std_outfile.c_str();
 
 	paused = false;
+    sprintf(msg,"len_infile: %d len_outfile: %d",len_infile,len_outfile);
+    LOG_MSG(msg);
     execute(&Global::ncpu,const_cast<char *>(infile),&len_infile,const_cast<char *>(outfile),&len_outfile);
     get_dimensions(&Global::NX,&Global::NY,&Global::NZ);
+    LOG_MSG("did execute");
+    sprintf(msg,"summary_interval: %d nt_vtk: %d",Global::summary_interval,Global::nt_vtk);
+    LOG_MSG(msg);
     Global::mutex1.lock();
     get_summary(Global::summaryData);
+    LOG_MSG("did get_summary");
 //    getProfiles();
     Global::mutex1.unlock();
 	emit summary();		// Emit signal to update summary plots
@@ -191,8 +199,11 @@ void ExecThread::run()
 		}
 		if (stopped) break;
 		simulate_step(&res);
-		if (res == 1) break;
-		if (stopped) break;
+        if (res == 1) {
+            LOG_MSG("simulate_step returned with error");
+            break;
+        }
+        if (stopped) break;
         if (i%Global::summary_interval == 0) {
             Global::mutex1.lock();
             get_summary(Global::summaryData);
@@ -201,7 +212,7 @@ void ExecThread::run()
                 getFACS();
             }
             Global::mutex1.unlock();
-			emit summary();		// Emit signal to update summary plots, at hourly intervals
+            emit summary();		// Emit signal to update summary plots, at hourly intervals
             if (Global::showingFACS || Global::recordingFACS) {
                 emit facs_update();
             }
@@ -219,7 +230,8 @@ void ExecThread::run()
     snapshot();
 	Sleep(10);
 	terminate_run(&res);
-	return;
+    Sleep(10);
+    return;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -287,6 +299,7 @@ void ExecThread::getFACS()
 //-----------------------------------------------------------------------------------------
 void ExecThread::stop()
 {
+    LOG_MSG("stopped = true");
 	stopped = true;
 }
 

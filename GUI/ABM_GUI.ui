@@ -35,9 +35,15 @@ padding: 8px
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <layout class="QGridLayout" name="gridLayout_5">
     <item row="0" column="0">
      <widget class="QStackedWidget" name="stackedWidget">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -163,7 +169,7 @@ padding: 8px
            </widget>
            <widget class="QLabel" name="label_FACS_INTERVAL">
             <property name="enabled">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -224,119 +230,13 @@ padding: 8px
            <attribute name="title">
             <string>Run</string>
            </attribute>
-           <widget class="QMyLabel" name="label_INPUT_FILE">
-            <property name="geometry">
-             <rect>
-              <x>1120</x>
-              <y>10</y>
-              <width>141</width>
-              <height>21</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Auxiliary input data file</string>
-            </property>
-           </widget>
-           <widget class="QLineEdit" name="text_INPUT_FILE">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1260</x>
-              <y>10</y>
-              <width>151</width>
-              <height>20</height>
-             </rect>
-            </property>
-           </widget>
-           <widget class="QLineEdit" name="line_SPECIAL_CASE">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1260</x>
-              <y>50</y>
-              <width>21</width>
-              <height>20</height>
-             </rect>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>120</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_SPECIAL_CASE">
-            <property name="geometry">
-             <rect>
-              <x>1290</x>
-              <y>50</y>
-              <width>151</width>
-              <height>21</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>label_SPECIAL_CASE</string>
-            </property>
-           </widget>
-           <widget class="QCheckBox" name="cbox_savepos">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1320</x>
-              <y>270</y>
-              <width>120</width>
-              <height>18</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Save cell paths</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_SPECIAL_CASE_FILE">
-            <property name="geometry">
-             <rect>
-              <x>1120</x>
-              <y>70</y>
-              <width>131</width>
-              <height>21</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Special case data file</string>
-            </property>
-           </widget>
-           <widget class="QLineEdit" name="text_SPECIAL_CASE_FILE">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1260</x>
-              <y>70</y>
-              <width>151</width>
-              <height>20</height>
-             </rect>
-            </property>
-           </widget>
            <widget class="QGroupBox" name="groupBox_run">
             <property name="geometry">
              <rect>
               <x>10</x>
               <y>10</y>
-              <width>351</width>
-              <height>311</height>
+              <width>371</width>
+              <height>361</height>
              </rect>
             </property>
             <property name="sizePolicy">
@@ -344,6 +244,12 @@ padding: 8px
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
             </property>
             <property name="title">
              <string/>
@@ -353,8 +259,8 @@ padding: 8px
               <rect>
                <x>10</x>
                <y>10</y>
-               <width>321</width>
-               <height>291</height>
+               <width>351</width>
+               <height>341</height>
               </rect>
              </property>
              <layout class="QGridLayout" name="gridLayout_4">
@@ -364,6 +270,125 @@ padding: 8px
               <property name="verticalSpacing">
                <number>4</number>
               </property>
+              <item row="3" column="0">
+               <widget class="QMyLabel" name="label_RADIUS0">
+                <property name="text">
+                 <string>label_RADIUS0</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <spacer name="horizontalSpacer_14">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>38</width>
+                  <height>17</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="3" column="2">
+               <widget class="QLineEdit" name="line_RADIUS0">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>60</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>15</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="12" column="2">
+               <widget class="QLineEdit" name="line_BG_FLOW_AMP">
+                <property name="maximumSize">
+                 <size>
+                  <width>60</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>8</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QMyLabel" name="label_DELTA_T">
+                <property name="text">
+                 <string>label_DELTA_T</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <spacer name="horizontalSpacer_24">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>13</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="4" column="2">
+               <widget class="QLineEdit" name="line_DELTA_T">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>60</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>0.25</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QMyLabel" name="label_NDAYS">
+                <property name="mouseTracking">
+                 <bool>false</bool>
+                </property>
+                <property name="toolTip">
+                 <string/>
+                </property>
+                <property name="text">
+                 <string>label_NDAYS</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
               <item row="0" column="0">
                <widget class="QMyLabel" name="label_NX">
                 <property name="text">
@@ -454,109 +479,6 @@ padding: 8px
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QMyLabel" name="label_RADIUS0">
-                <property name="text">
-                 <string>label_RADIUS0</string>
-                </property>
-                <property name="wordWrap">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <spacer name="horizontalSpacer_14">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>38</width>
-                  <height>17</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="3" column="2">
-               <widget class="QLineEdit" name="line_RADIUS0">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>60</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>15</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="0">
-               <widget class="QMyLabel" name="label_DELTA_T">
-                <property name="text">
-                 <string>label_DELTA_T</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <spacer name="horizontalSpacer_24">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>13</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="4" column="2">
-               <widget class="QLineEdit" name="line_DELTA_T">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>60</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>0.25</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="0">
-               <widget class="QMyLabel" name="label_NDAYS">
-                <property name="mouseTracking">
-                 <bool>false</bool>
-                </property>
-                <property name="toolTip">
-                 <string/>
-                </property>
-                <property name="text">
-                 <string>label_NDAYS</string>
-                </property>
-                <property name="wordWrap">
-                 <bool>false</bool>
                 </property>
                </widget>
               </item>
@@ -728,16 +650,6 @@ padding: 8px
                 </property>
                </widget>
               </item>
-              <item row="8" column="0">
-               <widget class="QMyLabel" name="label_NCPU">
-                <property name="toolTip">
-                 <string>animation update interval</string>
-                </property>
-                <property name="text">
-                 <string>label_NCPU</string>
-                </property>
-               </widget>
-              </item>
               <item row="8" column="1">
                <spacer name="horizontalSpacer_34">
                 <property name="orientation">
@@ -884,19 +796,6 @@ padding: 8px
                 </property>
                </widget>
               </item>
-              <item row="11" column="1">
-               <spacer name="horizontalSpacer_33">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>13</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
               <item row="11" column="2">
                <widget class="QLineEdit" name="line_DELAY">
                 <property name="maximumSize">
@@ -933,111 +832,101 @@ padding: 8px
                 </property>
                </widget>
               </item>
+              <item row="12" column="0">
+               <widget class="QMyLabel" name="label_BG_FLOW_AMP">
+                <property name="text">
+                 <string>label_BG_FLOW_AMP</string>
+                </property>
+               </widget>
+              </item>
+              <item row="11" column="1">
+               <spacer name="horizontalSpacer_33">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>13</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="12" column="1">
+               <spacer name="horizontalSpacer_36">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>13</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="8" column="0">
+               <widget class="QMyLabel" name="label_NCPU">
+                <property name="toolTip">
+                 <string>animation update interval</string>
+                </property>
+                <property name="text">
+                 <string>label_NCPU</string>
+                </property>
+               </widget>
+              </item>
+              <item row="13" column="1">
+               <spacer name="horizontalSpacer_37">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>88</width>
+                  <height>13</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="12" column="3">
+               <widget class="QLabel" name="units_BG_FLOW_AMP">
+                <property name="text">
+                 <string>um/min</string>
+                </property>
+               </widget>
+              </item>
+              <item row="13" column="0">
+               <widget class="QMyLabel" name="label_BG_FLOW_DIR">
+                <property name="text">
+                 <string>label_BG_FLOW_DIR</string>
+                </property>
+               </widget>
+              </item>
+              <item row="13" column="2">
+               <widget class="QLineEdit" name="line_BG_FLOW_DIR">
+                <property name="maximumSize">
+                 <size>
+                  <width>60</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>0</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="13" column="3">
+               <widget class="QLabel" name="units_BG_FLOW_DIR">
+                <property name="text">
+                 <string>degree</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
-           </widget>
-           <widget class="QCheckBox" name="cbox_record">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1280</x>
-              <y>180</y>
-              <width>131</width>
-              <height>18</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Record 3D images</string>
-            </property>
-           </widget>
-           <widget class="QLineEdit" name="lineEdit_recordFileName">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1280</x>
-              <y>250</y>
-              <width>151</width>
-              <height>20</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>frame</string>
-            </property>
-           </widget>
-           <widget class="QMyLabel" name="label_DUMMY_IMAGE_BASENAME">
-            <property name="geometry">
-             <rect>
-              <x>1110</x>
-              <y>250</y>
-              <width>161</width>
-              <height>21</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>label_DUMMY_IMAGE_BASENAME</string>
-            </property>
-           </widget>
-           <widget class="QLineEdit" name="lineEdit_record_hour1">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1280</x>
-              <y>200</y>
-              <width>31</width>
-              <height>20</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_record1">
-            <property name="geometry">
-             <rect>
-              <x>1320</x>
-              <y>200</y>
-              <width>91</width>
-              <height>16</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Start hour</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_record2">
-            <property name="geometry">
-             <rect>
-              <x>1320</x>
-              <y>220</y>
-              <width>91</width>
-              <height>16</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>End hour</string>
-            </property>
-           </widget>
-           <widget class="QLineEdit" name="lineEdit_record_hour2">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>1280</x>
-              <y>220</y>
-              <width>31</width>
-              <height>20</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
            </widget>
            <widget class="QLineEdit" name="line_DUMMY_IMAGE_BASENAME">
             <property name="geometry">
@@ -1052,8 +941,8 @@ padding: 8px
            <widget class="QGroupBox" name="groupBox_TC">
             <property name="geometry">
              <rect>
-              <x>370</x>
-              <y>40</y>
+              <x>400</x>
+              <y>50</y>
               <width>251</width>
               <height>71</height>
              </rect>
@@ -1173,7 +1062,7 @@ padding: 8px
            <widget class="QMyCheckBox" name="cbox_WRAP">
             <property name="geometry">
              <rect>
-              <x>630</x>
+              <x>660</x>
               <y>70</y>
               <width>101</width>
               <height>18</height>
@@ -1186,7 +1075,7 @@ padding: 8px
            <widget class="QLabel" name="alabel_motiliy">
             <property name="geometry">
              <rect>
-              <x>470</x>
+              <x>500</x>
               <y>20</y>
               <width>51</width>
               <height>16</height>
@@ -1205,7 +1094,7 @@ padding: 8px
            <widget class="QGroupBox" name="groupBox_chemo">
             <property name="geometry">
              <rect>
-              <x>370</x>
+              <x>400</x>
               <y>150</y>
               <width>271</width>
               <height>121</height>
@@ -1219,7 +1108,7 @@ padding: 8px
               <rect>
                <x>10</x>
                <y>10</y>
-               <width>249</width>
+               <width>251</width>
                <height>105</height>
               </rect>
              </property>
@@ -1377,7 +1266,7 @@ padding: 8px
            <widget class="QLabel" name="alabel_chemo">
             <property name="geometry">
              <rect>
-              <x>440</x>
+              <x>480</x>
               <y>130</y>
               <width>121</width>
               <height>20</height>
@@ -1600,22 +1489,6 @@ padding: 8px
         <property name="title">
          <string/>
         </property>
-        <widget class="QwtPlot" name="qwtPlot_FACS">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>10</y>
-           <width>570</width>
-           <height>390</height>
-          </rect>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-        </widget>
         <widget class="QGroupBox" name="groupBox_FACS_vars">
          <property name="geometry">
           <rect>
@@ -1994,12 +1867,6 @@ padding: 8px
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QwtPlot</class>
-   <extends>QFrame</extends>
-   <header>qwt_plot.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>QMyLabel</class>
    <extends>QLabel</extends>
    <header>qmylabel.h</header>
@@ -2025,40 +1892,7 @@ padding: 8px
  <resources>
   <include location="icons.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>line_SPECIAL_CASE</sender>
-   <signal>textEdited(QString)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>on_line_SPECIAL_CASE_textEdited(QString)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>559</x>
-     <y>142</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>529</x>
-     <y>54</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cbox_record</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>on_cbox_record_toggled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>660</x>
-     <y>541</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>758</x>
-     <y>53</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
  <slots>
   <slot>on_rbut_ACTIVATION_MODE_0_toggled(bool)</slot>
   <slot>on_line_SPECIAL_CASE_textEdited(QString)</slot>

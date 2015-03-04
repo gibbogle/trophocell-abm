@@ -7,7 +7,7 @@ implicit none
 
 contains
 
-#if (.false.)
+#if (0)
 
 !--------------------------------------------------------------------------------
 ! The jump site is selected from all neighbouring sites on the basis of jump
@@ -23,7 +23,7 @@ integer :: fullslots1,fullslots2,site1(3),site2(3),kslot2,stype
 integer :: irel,dir1,lastdir1,indx2(2),k,z
 integer :: savesite2(3,MAXRELDIR), saveslots2(MAXRELDIR)
 integer :: savesite2a(3,MAXRELDIR+1), saveslots2a(MAXRELDIR+1)
-real(REAL_KIND) :: psum, p(MAXRELDIR+1), R, pR, psumm 
+real(REAL_KIND) :: psum, p(MAXRELDIR+1), R, pR, psumm
 
 cell => cell_list(kcell)
 site1 = cell%site
@@ -373,7 +373,7 @@ logical :: ok
 logical :: go
 type (cell_type), pointer :: cell
 integer :: kcell, site(3),indx(2),slot
-integer :: kpar=0
+integer :: kpar=0, kparr=0
 
 if (.not.SIMULATE_2D) then
 	call logger('Error: mover: only SIMULATE_2D is currently simulated')
@@ -391,7 +391,10 @@ do kcell = 1,nlist
         slot = 2
 	endif
 	call chemo_jumper2D(kcell,indx,slot,go,kpar)
+	call flow_jumper2D(kcell,indx,slot,go,kparr)
 enddo
+
+
 ok = .true.
 end subroutine
 
@@ -558,7 +561,7 @@ real(REAL_KIND) :: p(MAXRELDIR2D+1),psum, R, pR, psumm, stay_prob,  psave(MAXREL
 real(REAL_KIND) :: tnow, v(3), vsum(3), f
 logical :: ischemo
 
-GAMMA = 1.0		!0.5
+GAMMA = 0.5
 tnow = istep*DELTA_T
 cell => cell_list(kcell)
 
@@ -575,7 +578,7 @@ do k = 1,2
         fullslots1 = fullslots1 + k
     endif
 enddo
-stay_prob = dirprob(0)
+stay_prob = dirprob2D(0)
 
 ischemo = .false.
 do kr = 1,MAX_RECEPTOR
@@ -598,10 +601,10 @@ if (ischemo) then
         if (receptor(kr)%used .and. (cell%receptor_saturation_time(kr) == 0)) then
 			ichemo = receptor(kr)%chemokine
 			f = receptor(kr)%sign*cell%receptor_level(kr)*receptor(kr)%strength
-			
+
 			v = chemo(ichemo)%grad(:,site1(1),site1(2),site1(3))
 !			v = [1,0,0]	! need the chemo field gradient
-			
+
 			if (receptor_saturation(kr,site1,f,v)) then
 			    cell%receptor_saturation_time(kr) = tnow
 			    f = f/2
@@ -652,7 +655,7 @@ do irel = 1,nreldir2D
 	site2 = site1 + jumpvec2D(:,dir1)
 	if (inside_xy(site2)) then
 	    indx2 = occupancy(site2(1),site2(2),site2(3))%indx
-		if (indx2(1) >= 0) then     ! not OUTSIDE_TAG 
+		if (indx2(1) >= 0) then     ! not OUTSIDE_TAG
             fullslots2 = 0
             do k = 1,2
                 if (indx2(k) > 0) then
@@ -717,8 +720,8 @@ if (dir1 > njumpdirs2D) then
     enddo
 endif
 site2 = savesite2a(:,dir1)
-
 fullslots2 = saveslots2a(dir1)
+
 if (dir1 == 0) then
 	dir1 = random_int(1,8,kpar)
 endif
@@ -741,6 +744,308 @@ else
 endif
 cell%site = site2
 cell%lastdir = dir1
+occupancy(site2(1),site2(2),site2(3))%indx(kslot2) = kcell
+occupancy(site1(1),site1(2),site1(3))%indx(kslot1) = 0
+end subroutine
+
+!--------------------------------------------------------------------------------
+! This code follows the flow chart.
+! (note that there was a mistake in the chart - the P0 case goes to "Choose free slot at S1")
+!--------------------------------------------------------------------------------
+subroutine flow_jumper2D(kcell,indx1,kslot1,go,kpar)
+integer :: kcell, indx1(2), kslot1, kpar
+logical :: go
+integer :: indx(2), site1(3), site2(3), jrel
+integer :: kslot2, irel, j, k, nv(3)
+logical :: in, try_S1
+real(REAL_KIND) :: vx, vy, vz, v(3), d(3), Arad, u1(3), u2(3), p(0:2), R, psum
+type (cell_type), pointer :: cell
+
+cell => cell_list(kcell)
+
+Arad = BG_flow_dir*PI/180
+vx = BG_flow_amp*cos(Arad)/DELTA_X
+vy = BG_flow_amp*sin(Arad)/DELTA_X
+vz = 0
+v = (/vx,vy,vz/)
+! At this point v is the velocity in gridcells/min
+! to get the displacement in gridcells, need to multiply by DELTA_T
+d = v*DELTA_T	! note that Fortran allows operations on vectors (more generally on arrays)
+! then find the integer jumps
+nv = int(d)	
+d = d - nv		! this is the residual displacement
+
+! Determine intermediate site S1.  Note that we do not jump here unless S2 is not available
+site1 = cell%site + nv
+if (nv(1) /= 0 .or. nv(2) /= 0) then
+	in = inside_xy(site1)	! This is only to adjust site1 if wrapping is on.  At this stage we do not need anything else.
+endif
+
+! Determine bracketting jump directions for residual d
+Arad = atan2(d(2),d(1))
+if (Arad < 0) Arad = Arad + 2*PI	! the range of atan2 is (-PI, PI)
+
+jrel = floor(1 + 4*Arad/PI)
+
+if (jrel == 8) then
+    u1 = jumpvec2D(:,jrel)
+    u2 = jumpvec2D(:,1)
+else
+    u1 = jumpvec2D(:,jrel)
+    u2 = jumpvec2D(:,jrel+1)
+endif
+
+p(1) = (d(2)*u2(1)- d(1)*u2(2))/(u1(2)*u2(1)-u1(1)*u2(2))
+p(2) = (d(2)*u1(1)- d(1)*u1(2))/(u1(1)*u2(2)-u1(2)*u2(1))
+p(0) = 1 - (p(1)+p(2))
+
+R = par_uni(kpar)
+psum = 0
+do irel = 0,2
+   	psum = psum + p(irel)
+   	if (R <= psum) then
+   		exit
+   	endif
+enddo
+
+try_S1 = .false.
+if (irel == 0) then
+	try_S1 = .true.
+elseif (irel == 1) then
+    site2 = site1 + u1
+else
+    site2 = site1 + u2
+endif
+
+if (.not.try_S1) then
+	in = inside_xy(site2)
+	if (in) then
+		! choose a free slot at S2
+	    indx = occupancy(site2(1),site2(2),site2(3))%indx
+		if (indx(1) == 0) then
+			kslot2 = 1
+		elseif (indx(2) == 0) then
+			kslot2 = 2
+		else
+			try_S1 = .true.		! no free slot
+		endif
+	else
+		try_S1 = .true.
+	endif
+endif
+
+if (try_S1) then
+	! choose a free slot at S1
+    indx = occupancy(site1(1),site1(2),site1(3))%indx
+	if (indx(1) == 0) then
+		kslot2 = 1
+	elseif (indx(2) == 0) then
+		kslot2 = 2
+	else
+		go = .false.		! no free slot, stay at S0
+		return
+	endif
+	site2 = site1
+endif
+! move to kslot2 at site2
+cell%site = site2
+occupancy(site2(1),site2(2),site2(3))%indx(kslot2) = kcell
+occupancy(site1(1),site1(2),site1(3))%indx(kslot1) = 0
+end subroutine
+
+!--------------------------------------------------------------------------------
+!
+!--------------------------------------------------------------------------------
+subroutine flow_jumper2D_rojan(kcell,indx1,kslot1,go,kparr)
+integer :: kparr, kcell, indx1(2), indx2(2), fullslots1, fullslots2, site1(3), site2(3), nfull, nrest, nout, jrel
+integer :: kslot1, kslot2, irel, j, k, nvx, nvy, nvz, nv(3), normv
+logical :: go
+integer :: u(3,8)
+real(REAL_KIND) :: vx, vy, vz, v(3), d(3), Arad, u1(3), u2(3), p(3), stay_prob, R, tnow, pR, psum, psumm
+type (cell_type), pointer :: cell
+
+tnow = istep*DELTA_T
+cell => cell_list(kcell)
+
+Arad = BG_flow_dir*PI/180
+vx = BG_flow_amp*cos(Arad)/DELTA_X
+vy = BG_flow_amp*sin(Arad)/DELTA_X
+vz = 0/DELTA_X
+v = (/vx,vy,vz/)
+! Gib: at this point v is the velocity in gridcells/min
+!      to get the displacement in gridcells need to multiply by DELTA_T
+d = v*DELTA_T	! note that Fortran allows operations on vectors (more generally on arrays)
+!      then find the integer jumps
+nv = int(d)	
+d = d - nv		! this is the residual displacement
+
+!nvx = int(vx)
+!nvy = int(vy)
+!nvz = int(vz)
+!nv = (/nvx, nvy, nvz/)
+!vx = vx - nvx
+!vy = vy - nvy
+!vz = vz - nvz
+!v = (/vx,vy,vz/)
+!d = v*DELTA_T
+
+
+! first jump for the integer amount of the BG velocity (v >> dx/dt)
+nfull = 0	! Gib: added
+site1 = cell%site
+site2 = site1 + nv
+if (inside_xy(site2)) then
+    indx2 = occupancy(site2(1),site2(2),site2(3))%indx
+    if (indx2(1) >= 0) then     ! not OUTSIDE_TAG
+        fullslots2 = 0
+        do k = 1,2
+            if (indx2(k) > 0) then
+                fullslots2 = fullslots2 + k
+            endif
+        enddo
+        if (fullslots2 == BOTH) then
+            nfull = nfull + 1		! <<<<< Gib: nfull was not initialised
+            go = .false.
+            return
+        elseif (fullslots2 /= 0) then
+            site2 = site2
+        else
+            site2 = site2
+        endif
+    endif
+endif
+
+if (fullslots2 == 0) then       ! randomly select a slot
+    R = par_uni(kparr)
+    if (R <= 0.5) then
+        kslot2 = SLOT_NUM1
+    else
+        kslot2 = SLOT_NUM2
+    endif
+elseif (fullslots2 == SLOT_NUM1) then
+    kslot2 = SLOT_NUM2
+elseif (fullslots2 == SLOT_NUM2) then
+    kslot2 = SLOT_NUM1
+else
+    write(logmsg,*) 'ERROR in jumper2D: jump to crowded site'
+	call logger(logmsg)
+    stop
+endif
+cell%site = site2
+occupancy(site2(1),site2(2),site2(3))%indx(kslot2) = kcell
+occupancy(site1(1),site1(2),site1(3))%indx(kslot1) = 0
+
+
+! Second jump for the residual amount of BG velocity (v << dx/dt)
+
+do j = 1,njumpdirs2D
+    u(:,j)=jumpvec2D(:,j)
+enddo
+
+Arad = atan(vy/vx)
+if (vy <0 .and. vx<0) then
+    Arad = PI + Arad
+elseif (Arad==0 .and. vx<0) then
+    Arad = PI
+elseif (vy <0 .and. vx>0) then
+    Arad = 2*PI + Arad
+elseif (vy >0 .and. vx<0) then
+    Arad = PI + Arad
+!elseif (Arad==-1.57079625 .and. vy>0) then
+!    Arad = PI/2
+!elseif (Arad==-1.57079625 .and. vy<0) then
+!    Arad = 3*PI/2
+endif
+
+jrel = floor(1 + 4*Arad/PI)
+
+if (jrel==8) then
+    u1=u(:,jrel)
+    u2=u(:,1)
+else
+    u1 = u(:,jrel)
+    u2 = u(:,jrel+1)
+endif
+
+p(1) = (d(2)*u2(1)- d(1)*u2(2))/(u1(2)*u2(1)-u1(1)*u2(2))
+p(2) = (d(2)*u1(1)- d(1)*u1(2))/(u1(1)*u2(2)-u1(2)*u2(1))
+p(3) = 1-(p(1)+p(2))
+
+site1 = cell%site
+
+psum = sum(p)
+
+if (sum(p) == 0) then
+    go = .false.
+    return
+endif
+R = par_uni(kparr)
+pR = psum*R
+psumm = 0
+do irel = 1,3
+   	psumm = psumm + p(irel)
+   	if (pR <= psumm) then
+   		exit
+   	endif
+enddo
+
+if (irel == 3) then
+    go = .false.
+    return
+elseif (irel == 1) then
+    site2 = site1 + u1
+else
+    site2 = site1 + u2
+endif
+
+
+nfull = 0
+nrest = 0
+nout = 0
+if (inside_xy(site2)) then
+    indx2 = occupancy(site2(1),site2(2),site2(3))%indx
+    if (indx2(1) >= 0) then     ! not OUTSIDE_TAG
+        fullslots2 = 0
+        do k = 1,2
+            if (indx2(k) > 0) then
+                fullslots2 = fullslots2 + k
+            endif
+        enddo
+        if (fullslots2 == BOTH) then
+            nfull = nfull + 1
+            go = .false.
+            return
+        elseif (fullslots2 /= 0) then
+            nrest = nrest + 1
+            site2 = site2
+        else
+            nrest = nrest + 1
+            site2 = site2
+        endif
+    else
+        nout = nout + 1
+    endif
+endif
+
+
+
+if (fullslots2 == 0) then       ! randomly select a slot
+    R = par_uni(kparr)
+    if (R <= 0.5) then
+        kslot2 = SLOT_NUM1
+    else
+        kslot2 = SLOT_NUM2
+    endif
+elseif (fullslots2 == SLOT_NUM1) then
+    kslot2 = SLOT_NUM2
+elseif (fullslots2 == SLOT_NUM2) then
+    kslot2 = SLOT_NUM1
+else
+    write(logmsg,*) 'ERROR in jumper2D: jump to crowded site'
+	call logger(logmsg)
+    stop
+endif
+cell%site = site2
 occupancy(site2(1),site2(2),site2(3))%indx(kslot2) = kcell
 occupancy(site1(1),site1(2),site1(3))%indx(kslot1) = 0
 end subroutine
@@ -954,9 +1259,9 @@ integer :: reldir18(6,18),reldir26(6,26)
 if (SIMULATE_2D) then
 	njumpdirs2D = 8
 	nreldir2D = 8
-	do k = 1,njumpdirs2D
-		write(*,'(a,i4,3f8.4)') 'jumpvec2D: ',k,jumpvec2D(:,k)
-	enddo
+!	do k = 1,njumpdirs2D
+!		write(*,'(a,i4,3f8.4)') 'jumpvec2D: ',k,jumpvec2D(:,k)
+!	enddo
 	do lastdir = 1,nreldir2D
 		do k = 1,njumpdirs2D
 			irel = lastdir + k-1
@@ -1063,8 +1368,8 @@ if (SIMULATE_2D) then
 		psum = psum + p(k)
 	enddo
 	dirprob2D(1:8) = BETA*p/psum
-	write(*,'(a,2f8.3)') 'compute_dirprobs: BETA, RHO: ',BETA,RHO
-	write(*,'(a,9f7.4)') 'dirprob2D: ',dirprob2D
+!	write(*,'(a,2f8.3)') 'compute_dirprobs: BETA, RHO: ',BETA,RHO
+!	write(*,'(a,9f7.4)') 'dirprob2D: ',dirprob2D
 	return
 endif
 if (MODEL == NEUMANN_MODEL) then
@@ -1133,12 +1438,12 @@ endif
 end subroutine
 
 !--------------------------------------------------------------------------------
-! The motivation for precomputing the array chemo_p() is to avoid having to 
+! The motivation for precomputing the array chemo_p() is to avoid having to
 ! compute the jump direction relative probabilities as a result of chemotaxis
-! every time a cell moves. 
+! every time a cell moves.
 ! The array chemo_p() holds the chemotaxis-only relative probabilities of jumps in
 ! the set of possible jump directions, for a comprehensive set of possible
-! chemokine gradient directions.  For a large enough value of chemo_N (e.g. 5), 
+! chemokine gradient directions.  For a large enough value of chemo_N (e.g. 5),
 ! the set of points (x,y,z) in the cube given by:
 !    x: -chemo_N,..,chemo_N
 !    y: -chemo_N,..,chemo_N
@@ -1146,7 +1451,7 @@ end subroutine
 ! generates a sufficiently extensive set of directions from (0,0,0).
 ! The vector v is the chemokine concentration gradient scaled by chemo_N and
 ! converted to integer.  Effectively it is a discretised approximation to
-! the direction of the concentration gradient.  
+! the direction of the concentration gradient.
 ! Note that the weight given to a jump direction is found from the cosine^2 of
 ! the angle between the jump direction and the chemokine gradient vector.
 ! The weights are then normalised.
@@ -1214,7 +1519,7 @@ end subroutine
 ! susceptibility to chemotaxis.
 ! On return p(:) holds the modified jump probabilities.
 ! Note: when njumpdirs = 27, jump 14 corresponds to (0,0,0) - unused.
-! Note: code modifications now base v and f on net chemotactic attraction of 
+! Note: code modifications now base v and f on net chemotactic attraction of
 ! multiple attractors (exits and DCs) by summing the chemokine gradient vectors.
 !--------------------------------------------------------------------------------
 subroutine chemo_probs_pre(p,v,f)
@@ -1277,7 +1582,7 @@ real(REAL_KIND) :: scale_M18 = 10  ! for M18
 real(REAL_KIND) :: scale_N = 6     ! for N
 real(REAL_KIND) :: arrow_head = 0.07
 
-write(*,*) 'make_probvectors'
+!write(*,*) 'make_probvectors'
 call make_reldir
 if (MODEL == NEUMANN_MODEL) then
     scale = scale_N

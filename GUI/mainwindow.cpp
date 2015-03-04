@@ -30,6 +30,7 @@ LOG_USE();
 Params *parm;	// I don't believe this is the right way, but it works!
 Graphs *grph;
 
+bool use_graphs = true;
 /*
 QMyLabel::QMyLabel(QWidget *parent) : QLabel(parent)
 {}
@@ -57,8 +58,10 @@ MainWindow::MainWindow(QWidget *parent)
    : QMainWindow(parent)
 {
 	LOG_MSG("Started MainWindow");
-	setupUi(this);
+    setupUi(this);
     showMaximized();
+//    return;
+
     // Some initializations
     nDistPts = 200;
 	nTicks = 1000;
@@ -79,11 +82,11 @@ MainWindow::MainWindow(QWidget *parent)
     for (int i=0; i<Plot::ncmax; i++) {
         graphResultSet[i] = 0;
     }
-    for (int i=0; i<20; i++) {  // need to fix the hard-coded numbers !!!!!!!!
-        Global::profile_x[i] = (double *)malloc(1000*sizeof(double));
-        Global::profile_y[i] = (double *)malloc(1000*sizeof(double));
-    }
-	vtkfile = "basecase.pos";
+//    for (int i=0; i<20; i++) {  // need to fix the hard-coded numbers !!!!!!!!
+//        Global::profile_x[i] = (double *)malloc(1000*sizeof(double));
+//        Global::profile_y[i] = (double *)malloc(1000*sizeof(double));
+//    }
+    vtkfile = "basecase.pos";
 	savepos_start = 0;
 	ntimes = 0;
 	hour = 0;
@@ -95,10 +98,10 @@ MainWindow::MainWindow(QWidget *parent)
 	parm = new Params();
 	nParams = parm->nParams;
 
+    nGraphs = 0;
     grph = new Graphs();
     setupGraphSelector();
     setGraphsActive();
-
     for (int i=0; i<MAX_DATA; i++)
         pGraph[i] = NULL;
     LOG_QMSG("did Graphs");
@@ -139,18 +142,6 @@ MainWindow::MainWindow(QWidget *parent)
     rect.setWidth(786);
 #endif
     mdiArea_VTK->setGeometry(rect);
-    /*
-    rect.setX(10);
-    rect.setY(0);
-#ifdef __DISPLAY768
-    rect.setHeight(500);
-    rect.setWidth(1100);
-#else
-    rect.setHeight(700);
-    rect.setWidth(1500);
-#endif
-    mdiArea->setGeometry(rect);
-    */
     showmdiAreaSize();
     tabs->setCurrentIndex(1);
 
@@ -162,6 +153,7 @@ MainWindow::MainWindow(QWidget *parent)
     videoVTK = new QVideoOutput(this, VTK_SOURCE, vtk->renWin, NULL);
     videoFACS = new QVideoOutput(this, QWT_SOURCE, NULL, qpFACS);
     goToInputs();
+
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -816,6 +808,7 @@ void MainWindow::loadResultFile()
     for (int i=0; i<nGraphs; i++) {
         if (!grph->isTimeseries(i)) continue;
         if (!grph->isActive(i)) continue;
+        printf("new R->pData\n");
         R->pData[i] = new double[R->nsteps];
     }
 
@@ -1266,6 +1259,7 @@ void MainWindow::runServer()
     Global::nt_vtk = line_NT_ANIMATION->text().toInt();
     Global::delay = line_DELAY->text().toInt();
     Global::ncpu = ncpu;
+    /*
     if (cbox_record->isChecked()) {
         double h1 = lineEdit_record_hour1->text().toDouble();
         double h2 = lineEdit_record_hour2->text().toDouble();
@@ -1277,6 +1271,7 @@ void MainWindow::runServer()
         Global::recordfrom = -1;
         Global::recordto = -1;
     }
+    */
     exthread->start();
 }
 
@@ -1316,13 +1311,16 @@ void MainWindow::preConnection()
 	// Initialize graphs
 	initializeGraphs(newR);
     LOG_MSG("did initializeGraphs");
+    printf("nGraphs: %d\n",nGraphs);
+    fflush(stdout);
+
     posdata = false;
-	if (cbox_savepos->isChecked()) {
+//	if (cbox_savepos->isChecked()) {
 //		savepos_start = 0;
 //		setSavePosStart();
-		if (QFile::exists(vtkfile))
-			QFile::remove(vtkfile);
-	}
+//		if (QFile::exists(vtkfile))
+//			QFile::remove(vtkfile);
+//	}
 //	action_stop->setChecked(false);
 	LOG_MSG("preconnection: done");
 }
@@ -1335,6 +1333,20 @@ void MainWindow::errorPopup(QString errmsg)
 	QMessageBox msgBox;
 	msgBox.setText(errmsg);
 	msgBox.exec();
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow::removeGraphs()
+{
+    mdiArea->closeAllSubWindows();
+    for (int i=0; i<MAX_DATA; i++) {
+        if (pGraph[i] != NULL) {
+            pGraph[i]->removeAllCurves();
+            delete pGraph[i];
+            pGraph[i] = NULL;
+        }
+    }
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -1368,22 +1380,23 @@ void MainWindow::initializeGraphs(RESULT_SET *R)
             yAxisTitle = "";
         }
         if (k > maxGraphs) break;
-            if (pGraph[i] != NULL) {
-                pGraph[i]->deleteLater();
-                pGraph[i] = NULL;
-            }
-            pGraph[i] = new Plot(tag,R->casename);
-            pGraph[i]->setTitle(title);
-            pGraph[i]->setAxisTitle(QwtPlot::yLeft, yAxisTitle);
+
+        if (pGraph[i] != NULL) {
+            pGraph[i]->removeAllCurves();
+            delete pGraph[i];
+            pGraph[i] = NULL;
+        }
+        pGraph[i] = new Plot(tag,R->casename);
+        pGraph[i]->setTitle(title);
+        pGraph[i]->setAxisTitle(QwtPlot::yLeft, yAxisTitle);
+
     }
     LOG_QMSG("did setTitles");
 
 	for (int i=0; i<nGraphs; i++) {
-//        if (grph->isTimeseries(i)) {
-            LOG_QMSG("addSubWindow: " + grph->get_tag(i));
-            mdiArea->addSubWindow(pGraph[i]);
-            pGraph[i]->show();
-//        }
+        LOG_QMSG("addSubWindow: " + grph->get_tag(i));
+        mdiArea->addSubWindow(pGraph[i]);
+        pGraph[i]->show();
 	}
 
 	if (show_outputdata) {
@@ -1402,7 +1415,6 @@ void MainWindow::initializeGraphs(RESULT_SET *R)
             pGraph[i]->setAxisTitle(QwtPlot::xBottom, "Time (hours)");
         }
 	}
-//    showmdiAreaSize();
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -1488,12 +1500,13 @@ void MainWindow::showSummary()
 {
 	char msg[128];
     double yscale;
-//    LOG_MSG("showSummary");
-	step++;
-	if (step >= newR->nsteps) {
-		LOG_MSG("ERROR: step >= nsteps");
-		return;
-	}
+    LOG_MSG("showSummary");
+    step++;
+    if (step >= newR->nsteps) {
+        sprintf(msg,"ERROR: step >= nsteps: %d %d",step,newR->nsteps);
+        LOG_MSG(msg);
+        return;
+    }
 
     Global::mutex1.lock();
 
@@ -1710,14 +1723,17 @@ void MainWindow::stopServer()
 			LOG_MSG("was paused, runServer before stopping");
 			runServer();
 		}
-        exthread->snapshot();
+//        exthread->snapshot();
 		exthread->stop();
-		sleep(1);		// delay for Fortran to wrap up (does this help?)
+        Sleep(100);		// delay for Fortran to wrap up (does this help?)
 		if (use_CPORT1) {
+            LOG_MSG("sthread1->quit()")
 			sthread1->quit();
-			sthread1->terminate();
+            LOG_MSG("sthread1->terminate()")
+            sthread1->terminate();
 		}
-		sthread0->stop();
+        LOG_MSG("sthread0->stop()")
+        sthread0->stop();
 		newR->nsteps = step+1;
 	}
     action_run->setEnabled(true); 
@@ -1730,6 +1746,7 @@ void MainWindow::stopServer()
     if (actionStop_recording_FACS->isEnabled()) {
         stopRecorderFACS();
     }
+    LOG_MSG("did stopServer");
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -2238,6 +2255,7 @@ void MainWindow::disableUseDCChemotaxis()
 	}
 }
 
+/*
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 void MainWindow::on_line_SPECIAL_CASE_textEdited(QString str)
@@ -2249,6 +2267,7 @@ void MainWindow::on_line_SPECIAL_CASE_textEdited(QString str)
 	else
 		ql->setEnabled(true);
 }
+*/
 
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
@@ -2684,22 +2703,19 @@ void MainWindow::create_hill_function(int N, double C, int n, double *x, double 
     }
 }
 
+/*
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
 void MainWindow::on_cbox_record_toggled(bool checked)
-{
+{  
     if (checked) {
         lineEdit_recordFileName->setEnabled(checked);
         lineEdit_record_hour1->setEnabled(checked);
         lineEdit_record_hour2->setEnabled(checked);
         framenum = 0;
-    }
-//    } else {
-//        lineEdit_recordFileName->setEnabled(false);
-//        lineEdit_record_hour1->setEnabled(false);
-//        lineEdit_record_hour2->setEnabled(false);
-//    }
+    }    
 }
+*/
 
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
@@ -2899,8 +2915,15 @@ int SliderPlus::nTicks() {
 //----------------------------
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    printf("Close event\n");
+    fflush(stdout);
+    goToInputs();
+    removeGraphs();
+    LOG_MSG("Close event");
+//    __log.close();
     event->accept();
-	/*
+//    exit(0);
+    /*
     if (maybeSave()) {
         writeSettings();
         event->accept();
@@ -3080,3 +3103,4 @@ QString MainWindow::strippedName(const QString &fullFileName)
 {
     return QFileInfo(fullFileName).fileName();
 }
+

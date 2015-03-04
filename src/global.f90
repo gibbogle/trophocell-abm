@@ -36,7 +36,7 @@ integer, parameter :: OUTSIDE_TAG = -99
 integer, parameter :: TAGGED_CELL   = 99
 !integer, parameter :: FINISHED = 10
 
-integer, parameter :: TCP_PORT_0 = 5000		! main communication port (logging) 
+integer, parameter :: TCP_PORT_0 = 5000		! main communication port (logging)
 integer, parameter :: TCP_PORT_1 = 5001		! data transfer port (plotting)
 integer, parameter :: TCP_PORT_2 = 5002
 integer, parameter :: TCP_PORT_3 = 5003
@@ -58,7 +58,7 @@ integer, parameter :: neumann(3,6) = reshape((/ -1,0,0, 1,0,0, 0,-1,0, 0,1,0, 0,
 real(REAL_KIND), parameter :: jumpvec2D(3,8) = reshape((/ 1,0,0, 1,1,0, 0,1,0, -1,1,0, -1,0,0, -1,-1,0, 0,-1,0, 1,-1,0 /), (/3,8/))
 
 real(REAL_KIND), parameter :: BIG_TIME = 100000
-logical, parameter :: use_add_count = .true.    ! keep count of sites to add/remove, do the adjustment at regular intervals 
+logical, parameter :: use_add_count = .true.    ! keep count of sites to add/remove, do the adjustment at regular intervals
 logical, parameter :: save_input = .true.
 
 integer, parameter :: NZ_2D = 1
@@ -114,7 +114,7 @@ type (path_type) :: log_path(MAX_LOG_PATHS,2)
 ! Parameters for controlling data capture for graphical purposes etc.
 integer, parameter :: save_interval_hours = 48
 real(REAL_KIND), parameter :: save_length_hours = 0.5      ! 30 minutes
-integer, parameter :: ntaglimit_base = 200000	
+integer, parameter :: ntaglimit_base = 200000
 integer, parameter :: ntres = 60    ! 15 min
 logical, parameter :: log_results = .false.
 
@@ -224,6 +224,10 @@ logical :: use_wrapping
 integer, parameter :: chemo_N = 5
 real(REAL_KIND), allocatable :: chemo_p(:,:,:,:)
 real(REAL_KIND) :: grad_amp(MAX_CHEMO), grad_dir(MAX_CHEMO)
+! Background flow
+real(REAL_KIND) :: BG_flow_amp
+real(REAL_KIND) :: BG_flow_dir
+
 
 ! Cell data
 type(occupancy_type), allocatable :: occupancy(:,:,:)
@@ -280,7 +284,7 @@ elseif (n1 > n2) then
     stop
 endif
 R = par_shr3(kpar)
-if (R == -2147483648) R = par_shr3(kpar)
+if (R < -2147483647) R = par_shr3(kpar)
 k = abs(R)
 random_int = n1 + mod(k,(n2-n1+1))
 end function
@@ -371,7 +375,7 @@ endif
 end function
 
 !----------------------------------------------------------------------------------------
-! Check to see if (x,y,z) is outside the grid 
+! Check to see if (x,y,z) is outside the grid
 !----------------------------------------------------------------------------------------
 logical function outside_xyz(x,y,z)
 integer :: x, y, z
@@ -561,7 +565,7 @@ end function
 ! Generate a random value for CFSE from a distribution with mean = average
 ! In the simplest case we can allow a uniform distribution about the average.
 ! Multiplying factor in the range (1-a, 1+a)
-! Better to make it a Gaussian distribution: 
+! Better to make it a Gaussian distribution:
 !  = average*(1+s*R)
 ! where R = N(0,1), s = std deviation
 !-----------------------------------------------------------------------------------------
@@ -675,7 +679,7 @@ integer :: i
 if (counter%logscale) then
     val = log10(sample)
 else
-	val = sample   
+	val = sample
 endif
 if (counter%nbins == 1) then
     i = 1

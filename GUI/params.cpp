@@ -56,7 +56,7 @@ Params::Params()
 "Initial radius",
 "Initial radius of tropho cell region"},
 
-{"NT_ANIMATION", 1, 0, 0,
+{"NT_ANIMATION", 10, 0, 0,
  "Animation interval (timesteps)",
  "Interval between animation screen updates (timesteps).  One timestep = 15 sec."},
 
@@ -92,8 +92,13 @@ Params::Params()
  "Gradient direction (deg.)",
  "Direction of the chemokine gradient (constant).  Degrees anticlockwise from X axis (0 - 360)."},
 
+{"BG_FLOW_AMP", 4, 0, 0,
+ "Background flow amplitude",
+ "Amplitude of the background flow (constant)"},
 
-
+{"BG_FLOW_DIR", 30, 0, 0,
+ "Background flow direction (deg.)",
+ "Direction of the background flow (constant)."},
 
 //{"IN_VITRO", 0, 0, 1,
 //"In vitro simulation",
@@ -132,7 +137,7 @@ Params::Params()
 // Note that the normalised value is the actual value divided by the specified upper limit."},
 
 //// Time-series plots
-//    {"nDC",                     1, 0,1,"",""},
+    {"nDC",                     1, 0,1,"",""},
 //    {"ntot_LN",                 1, 0,1,"",""},
 //    {"ncogseed",                1, 0,1,"",""},
 //    {"ncog_LN",                 1, 0,1,"",""},

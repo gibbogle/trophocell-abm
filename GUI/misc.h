@@ -30,11 +30,10 @@ public:
 private slots:
 	 void processor();
 signals:
-	 void sh_connected();
+     void sh_connected();
 	 void sh_disconnected();
 	 void sh_output(QString);
 	 void sh_error(QString);
-     void facs_update();
 };
 
 class ExecThread: public QThread
@@ -58,9 +57,11 @@ public:
 signals:
     void display();
 	void summary();
+    void setupC();
     void action_VTK();
     void redimension(int);
     void facs_update();
+    void histo_update();
 };
 
 bool quitMessage(QString);

@@ -100,76 +100,14 @@ Params::Params()
  "Background flow direction (deg.)",
  "Direction of the background flow (constant)."},
 
-//{"IN_VITRO", 0, 0, 1,
-//"In vitro simulation",
-//"Select in vitro simulation, i.e. in two dimensions"},
+{"SAVE_CELL_POSITIONS", 0, 0, 0,
+ "Saved cell positions",
+ "Number of cells to save positions for at each time step in the log file"},
 
-//{"FACS_INTERVAL", 30, 0, 0,
-//"FACS plot output interval (h)",
-//"If > 0, this is the interval (in hours) at which FACS plots will be generated.\n\
-// The file naming is: FACS_h#### where #### is the hour"},
-
-//{"SPECIAL_CASE", 0, 0, 0,
-//"Special case simulation",
-//"Select one of the hard-coded special cases (> 0)"},
-
-//{"SPECIAL_CASE_FILE", 0, 0, 0,
-//"",
-//"Input file required by the selected hard-coded special case"},
-
-//{"INPUT_FILE", 0, 0, 0,
-//"fixed.inpdata",
-//"The auxiliary input file contains data that (almost!) never changes"},
-
-//{"DUMMY_IMAGE_BASENAME", 0, 0, 0,
-//"3D image base file name",
-//"The base name, including path, for saved 3D images. For example, movie/frame will give image files movie/frame00000.jpg, movie/frame00001.jpg, ... \n\
-// NOTE the use of the forward slash /."},
-
-//{"DUMMY_STIMULATION_PLOT", 0, 0, 0,
-//"Normalized (pMHC*avidity)",
-//"In the STAGED case binding durations depend on stage, and the stimulation rate is a Hill function of x = (normalized pMHC)*(normalised avidity). \n\
-// Note that the normalised value is the actual value divided by the specified upper limit."},
-
-//{"DUMMY_BINDTIME_PLOT", 0, 0, 0,
-//"Normalized (pMHC*avidity)",
-//"In the UNSTAGED case the stimulation rate is simply x = (normalized pMHC)*(normalised avidity), and the binding duration is a Hill function of x. \n\
-// Note that the normalised value is the actual value divided by the specified upper limit."},
-
-//// Time-series plots
+// Time-series plots
     {"nDC",                     1, 0,1,"",""},
-//    {"ntot_LN",                 1, 0,1,"",""},
-//    {"ncogseed",                1, 0,1,"",""},
-//    {"ncog_LN",                 1, 0,1,"",""},
-//    {"ncog_PER",                1, 0,1,"",""},
-//    {"nbnd",                    0, 0,1,"",""},
-//    {"nexits",                  0, 0,1,"",""},
-//    {"nteffgen0",               0, 0,1,"",""},
-//    {"nteffgen",                0, 0,1,"",""},
-//    {"act",                     1, 0,1,"",""},
-//    {"stim_LN",                 1, 0,1,"",""},
-//    {"stim_PER",                0, 0,1,"",""},
-//    {"stimrate_LN",             1, 0,1,"",""},
-//    {"DCcontact_time",          0, 0,1,"",""},
-//    {"DCtravel_time",           0, 0,1,"",""},
-//    {"DCbind_time",             0, 0,1,"",""},
-//    {"Bound_fraction",          0, 0,1,"",""},
-//    {"nDC_SOI",                 0, 0,1,"",""},
-//    {"noDC_contact",            0, 0,1,"",""},
-//    {"noDC_contacttime",        0, 0,1,"",""},
-//    {"totDC_contacttime_LN",    0, 0,1,"",""},
-//    {"totDC_contacttime_PER",   0, 0,1,"",""},
-//// Profile plots
-//    {"CD69",                    0, 0,1,"",""},
-//    {"S1PR1",                   1, 0,1,"",""},
-//    {"Stimulation",             1, 0,1,"",""},
-//    {"Stimulation rate",        1, 0,1,"",""},
-//    {"Avidity LN",              1, 0,1,"",""},
-//    {"Avidity PER",             0, 0,1,"",""},
-//    {"Generation LN",           0, 0,1,"",""},
-//    {"DC contact time (min)",   0, 0,1,"",""},
-//    {"DC bind time (min)",      0, 0,1,"",""}
-
+// Profile plots
+    {"CD69",                    0, 0,1,"",""}
 
 };
     nParams = sizeof(params)/sizeof(PARAM_SET);

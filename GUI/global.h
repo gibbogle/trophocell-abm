@@ -21,15 +21,25 @@ namespace Global
     extern int delay;
     extern int summary_interval;
 
-//    int nvars_used;
-//    int GUI_to_DLL_index[32];
-//    int DLL_to_GUI_index[32];
-//    QString var_string[32];
+    extern int nvars_used;
+    extern int GUI_to_DLL_index[32];
+    extern int DLL_to_GUI_index[32];
+    extern QString var_string[32];
 
     extern double *FACS_data;
     extern int nFACS_cells;
     extern int nFACS_dim;
     extern int nFACS_vars;
+
+    extern double *histo_data;
+    extern double *histo_data_log;
+    extern int nhisto_bins;
+    extern int nhisto_dim;
+    extern double histo_vmin[3*32];
+    extern double histo_vmax[3*32];
+    extern double histo_vmin_log[3*32];
+    extern double histo_vmax_log[3*32];
+    extern int histo_celltype;
 
     extern double *profile_x[20];
     extern double *profile_y[20];

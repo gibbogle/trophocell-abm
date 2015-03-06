@@ -135,6 +135,7 @@ type cell_type
 !    type(cog_type),    pointer :: cptr    ! because NULL is used by winsock (from ifwinty).  NULLIFY() instead.
     integer(2) :: ctype
 	integer(2) :: lastdir
+	integer :: dtotal(3)
 end type
 
 type occupancy_type
@@ -175,12 +176,12 @@ logical :: use_traffic = .false.
 real(REAL_KIND) :: days                            ! number of days to simulate
 integer :: seed(2)                      ! seed vector for the RNGs
 integer :: FACS_INTERVAL				! interval between FACs plot outputs (h)
-integer :: SPECIES						! animal species source of T cells
-real(REAL_KIND) :: IV_WELL_DIAMETER				! diameter of in vitro well (mm)
-integer :: IV_NTCELLS					! initial T cell population in vitro
-real(REAL_KIND) :: IV_COGNATE_FRACTION				! fraction of in vitro cells that are cognate for DC antigen
-logical :: IV_SHOW_NONCOGNATE			! display non-cognate T cells
-character*(128) :: fixedfile
+!integer :: SPECIES						! animal species source of T cells
+!real(REAL_KIND) :: IV_WELL_DIAMETER				! diameter of in vitro well (mm)
+!integer :: IV_NTCELLS					! initial T cell population in vitro
+!real(REAL_KIND) :: IV_COGNATE_FRACTION				! fraction of in vitro cells that are cognate for DC antigen
+!logical :: IV_SHOW_NONCOGNATE			! display non-cognate T cells
+!character*(128) :: fixedfile
 
 !---------------------------------------------------
 ! end of parameters to read from input file
@@ -219,6 +220,7 @@ integer :: reldir2D(8,8)
 real(REAL_KIND) :: dirprob2D(0:8)
 logical :: diagonal_jumps
 logical :: use_wrapping
+integer :: n_cell_positions
 
 ! Chemotaxis data
 integer, parameter :: chemo_N = 5

@@ -14,6 +14,8 @@
 #include "myvtk.h"
 #include "global.h"
 
+#include "qmylabel.h"   // redundant!
+
 #ifdef _WIN32
 #include "windows.h"
 #define sleep(n) Sleep(1000 * n)
@@ -31,27 +33,7 @@ Params *parm;	// I don't believe this is the right way, but it works!
 Graphs *grph;
 
 bool use_graphs = true;
-/*
-QMyLabel::QMyLabel(QWidget *parent) : QLabel(parent)
-{}
 
-//--------------------------------------------------------------------------------------------------------
-// Redefines mousePressEvent for QMyLabel, which extends QLabel.  This is used to display info about
-// a model parameter.
-//--------------------------------------------------------------------------------------------------------
-void QMyLabel::mousePressEvent (QMouseEvent *event) {
-	event->accept();
-	QString sname = objectName().mid(6);
-	QString text = "mousePressEvent";
-	// Find which label_ sent the signal, and read its text
-	for (int k=0; k<parm->nParams; k++) {
-		PARAM_SET param = parm->get_param(k);
-		if (sname.compare(param.tag) == 0)
-			text = param.text;
-	}
-    emit labelClicked(text);
-}
-*/
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
@@ -74,6 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
     first = true;
 	started = false;
     firstVTK = true;
+    histogram = NULL;
     Global::recordingVTK = false;
     Global::showingVTK = false;
     Global::recordingFACS = false;
@@ -106,6 +89,10 @@ MainWindow::MainWindow(QWidget *parent)
         pGraph[i] = NULL;
     LOG_QMSG("did Graphs");
 
+    histo_rb_list = NULL;
+    vbox_histo = NULL;
+    buttonGroup_histo = new QButtonGroup;
+
     createLists();
     LOG_QMSG("did createLists");
     createActions();
@@ -114,6 +101,8 @@ MainWindow::MainWindow(QWidget *parent)
 //    LOG_QMSG("did initDistPlots");
 //    initFACSPlot();
 //    LOG_QMSG("did initFACSPlot");
+    initHistoPlot();
+    LOG_QMSG("did initHistoPlot");
     loadParams();
     LOG_QMSG("did loadParams");
 
@@ -212,6 +201,7 @@ void MainWindow::createActions()
     connect(actionStop_recording_VTK, SIGNAL(triggered()), this, SLOT(stopRecorderVTK()));
     connect(actionStart_recording_FACS, SIGNAL(triggered()), this, SLOT(startRecorderFACS()));
     connect(actionStop_recording_FACS, SIGNAL(triggered()), this, SLOT(stopRecorderFACS()));
+    connect(buttonGroup_histo, SIGNAL(buttonClicked(QAbstractButton*)), this, SIGNAL(histo_update()));
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -289,7 +279,334 @@ void MainWindow::createLists()
 //    distplot_list[6] = qp;
 }
 
+//-----------------------------------------------------------------------------------------
+// Shows how to fetch active constituent names and use them to initialise a radiobutton
+// group, and also to record their DLL index values (ichemo):
+// 0 CFSE
+// 1 Oxygen
+// 2 Glucose
+// 3 Tracer
+// 4 TPZ drug
+// 5 TPZ drug metabolite 1
+// 6 TPZ drug metabolite 2
+// 7 DNB drug
+// 8 DNB drug metabolite 1
+// 9 DNB drug metabolite 2
+// ...
+//
+// GUI_to_DLL_index[ivar], ivar=0,..,nvars_used-1 = base DLL index (0,MAX_CHEMO+NEXTRA)
+// DLL_to_GUI_index[ichemo],ichemo=0,..,MAX_CHEMO+NEXTRA = index in list of variables in use (0,nvars_used-1)
+//-----------------------------------------------------------------------------------------
+void MainWindow::setupConstituents()
+{
+    int nvarlen, narraylen;
+    char *name_array;
+    char name[25];
+    QString str, tag;
+    int ivar, ichemo;
 
+    narraylen = 1000;
+    name_array = (char *)malloc(narraylen*sizeof(char));
+    get_constituents(&Global::nvars_used, Global::GUI_to_DLL_index, &nvarlen, name_array, &narraylen);
+    for (ichemo=0; ichemo<32; ichemo++)
+        Global::DLL_to_GUI_index[ichemo] = -1;
+    for (ivar=0; ivar<Global::nvars_used; ivar++)
+        Global::DLL_to_GUI_index[Global::GUI_to_DLL_index[ivar]] = ivar;
+    int k = 0;
+    for (ivar=0; ivar<Global::nvars_used; ivar++) {
+        for (int i=0; i<nvarlen; i++) {
+            name[i] = name_array[k];
+            k++;
+        }
+        name[nvarlen] = NULL;
+        str = name;
+        Global::var_string[ivar] = str.trimmed();
+        LOG_QMSG(name);
+    }
+    free(name_array);
+    LOG_MSG("set up Global");
+//    tag = "field";
+//    field->setConstituentButtons(groupBox_constituent,field->buttonGroup_constituent,&field->vbox_constituent,&field->constituent_rb_list,tag);
+//    LOG_MSG("did setConstituentButtons: field");
+    tag = "histo";
+    setConstituentButtons(groupBox_Histo_y_vars,buttonGroup_histo,&vbox_histo,&histo_rb_list,tag);
+    LOG_MSG("did setConstituentButtons: histo");
+//    tag = "FACS_x";
+//    field->setConstituentButtons(groupBox_FACS_x_vars,buttonGroup_FACS_x_vars,&vbox_FACS_x_vars,&FACS_x_vars_rb_list,tag);
+//    FACS_x_vars_rb_list[0]->setChecked(true);
+//    LOG_MSG("did setConstituentButtons: FACS_x");
+//    tag = "FACS_y";
+//    field->setConstituentButtons(groupBox_FACS_y_vars,buttonGroup_FACS_y_vars,&vbox_FACS_y_vars,&FACS_y_vars_rb_list,tag);
+//    LOG_MSG("did setConstituentButtons: FACS_y");
+}
+
+//------------------------------------------------------------------------------------------------
+// To create the group of radiobuttons for constituent selection.
+// This uses information about active constituents fetched from the DLL.
+//------------------------------------------------------------------------------------------------
+void MainWindow::setConstituentButtons(QGroupBox *gbox, QButtonGroup *bg, QVBoxLayout **vbox, QRadioButton ***rb_list, QString tag)
+{
+    int ivar;
+    QString name, str;
+    int **ip;
+    QRadioButton **p;
+    QRadioButton *rb;
+
+    p = *rb_list;
+    LOG_QMSG("setConstituentButtons: " + tag);
+    if (p) {
+        LOG_MSG("rb_list not NULL, delete it");
+        for (ivar=0; ivar<Global::nvars_used; ivar++) {
+            rb = p[ivar];
+            bg->removeButton(rb);
+            delete rb;
+        }
+        delete p;
+    }
+    if (!*vbox) {
+        LOG_MSG("vbox = NULL, create it");
+        *vbox = new QVBoxLayout;
+        gbox->setLayout(*vbox);
+    }
+    name = "rb_constituent_"+tag;
+    LOG_QMSG(name);
+    *rb_list = new QRadioButton*[Global::nvars_used];
+    p = *rb_list;
+//    sprintf(msg,"rb_list: %p vbox: %p bg: %p nvars_used: %d",p,*vbox,bg,Global::nvars_used);
+//    LOG_MSG(msg);
+    for (ivar=0; ivar<Global::nvars_used; ivar++) {
+        str = Global::var_string[ivar];
+        p[ivar] = new QRadioButton;
+        p[ivar]->setText(str);
+        p[ivar]->setObjectName(name+ivar);
+        (*vbox)->addWidget(p[ivar]);
+        p[ivar]->setEnabled(true);
+        bg->addButton(p[ivar],ivar);
+    }
+    p[1]->setChecked(true);   // Oxygen
+    QRect rect = gbox->geometry();
+    rect.setHeight(25*Global::nvars_used);
+    gbox->setGeometry(rect);
+    gbox->show();
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow::test_histo()
+{
+    int numValues = 20;
+    double width = 10, xmin = 0;
+    QwtArray<double> values(numValues);
+    for (int i=0; i<numValues; i++) {
+        values[i] = rand() %100;
+    }
+    makeHistoPlot(numValues,xmin,width,values);
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow:: initHistoPlot()
+{
+    qpHistoBar = (QwtPlot *)qFindChild<QObject *>(this, "qwtPlot_Histo");
+    qpHistoBar->setTitle("Histogram");
+//    QwtSymbol symbol = QwtSymbol( QwtSymbol::Diamond, Qt::blue, Qt::NoPen, QSize( 3,3 ) );
+    qpHistoBar->replot();
+
+    qpHistoLine = (QwtPlot *)qFindChild<QObject *>(this, "qwtPlot_HistoLine");
+    qpHistoLine->hide();
+
+    connect((QObject *)groupBox_Histo,SIGNAL(groupBoxClicked(QString)),this,SLOT(processGroupBoxClick(QString)));
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow::makeHistoPlot(int numValues, double xmin, double width,  QwtArray<double> values)
+{
+    QwtPlot *plot;
+    double pos;
+
+//    LOG_MSG("makeHistoPlot");
+    bool use_HistoBar = radioButton_histotype_1->isChecked();
+    if (use_HistoBar) {
+        plot = qpHistoBar;
+        qpHistoLine->hide();
+    } else {
+        plot = qpHistoLine;
+        qpHistoBar->hide();
+    }
+    plot->clear();
+    plot->setCanvasBackground(QColor(Qt::white));
+    plot->setTitle("Histogram");
+
+    QwtPlotGrid *grid = new QwtPlotGrid;
+    grid->enableXMin(true);
+    grid->enableYMin(true);
+    grid->setMajPen(QPen(Qt::black, 0, Qt::DotLine));
+    grid->setMinPen(QPen(Qt::gray, 0 , Qt::DotLine));
+    grid->attach(plot);
+
+    if (use_HistoBar) {
+        if (histogram) {
+            histogram->detach();
+        } else {
+            histogram = new HistogramItem();
+        }
+        histogram->setColor(Qt::darkCyan);
+
+        QwtArray<QwtDoubleInterval> intervals(numValues);
+
+        pos = xmin;
+        for ( int i = 0; i < numValues; i++ )
+        {
+            intervals[i] = QwtDoubleInterval(pos, pos + width);
+            pos += width;
+        }
+
+        histogram->setData(QwtIntervalData(intervals, values));
+        histogram->attach(plot);
+    } else {
+        double x[100], y[100];
+        for ( int i = 0; i < numValues; i++ ) {
+            x[i] = xmin + (i + 0.5)*width;
+            y[i] = values[i];
+        }
+        pos = x[numValues-1] + width/2;
+        QwtPlotCurve *curve = new QwtPlotCurve("");
+        QPen *pen = new QPen();
+        pen->setColor(Qt::black);
+        curve->attach(plot);
+        curve->setPen(*pen);
+        curve->setData(x, y, numValues);
+    }
+
+    plot->setAxisScale(QwtPlot::yLeft, 0.0, 100.0);
+    plot->setAxisScale(QwtPlot::xBottom, xmin, pos);
+    plot->replot();
+//    plot->resize(600,400);
+    plot->show();
+
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow::on_buttonGroup_celltype_buttonClicked(QAbstractButton* button)
+{
+    LOG_MSG("on_buttonGroup_celltype_buttonClicked");
+    if (button->text() == "Cell type 1") {
+        Global::histo_celltype = 1;
+    } else if (button->text() == "Cell type 2") {
+        Global::histo_celltype = 2;
+    } else {
+        Global::histo_celltype = 0; // both cell types
+    }
+    showHisto();
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow::on_checkBox_histo_logscale_toggled()
+{
+    showHisto();
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow::on_buttonGroup_histotype_buttonClicked(QAbstractButton* button)
+{
+    showHisto();
+}
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow:: showHisto()
+{
+    int ivar, k, k0, numValues;
+    QRadioButton *rb;
+    QString xlabel;
+    double width, xmin;
+    bool log_scale;
+
+//    LOG_MSG("showHisto");
+    log_scale = checkBox_histo_logscale->isChecked();
+    numValues = Global::nhisto_bins;
+    QwtArray<double> values(numValues);
+
+    // Determine which button is checked:
+    for (ivar=0; ivar<Global::nvars_used; ivar++) {
+        rb = histo_rb_list[ivar];
+        if (rb->isChecked()) {
+            break;
+        }
+    }
+    xlabel = Global::var_string[ivar];
+    k0 = Global::histo_celltype*numValues*Global::nvars_used;
+//    sprintf(msg,"histo_celltype: %d numValues: %d nvars_used: %d k0: %d",Global::histo_celltype,numValues,Global::nvars_used,k0);
+//    LOG_MSG(msg);
+    if (!Global::histo_data) {
+        LOG_MSG("No histo_data");
+        return;
+    }
+    for (int i=0; i<numValues; i++) {
+        k = k0 + ivar*numValues + i;
+        if (log_scale)
+            values[i] = Global::histo_data_log[k];
+        else
+            values[i] = Global::histo_data[k];
+    }
+    if (log_scale) {
+        xmin = Global::histo_vmin_log[ivar];
+        width = (Global::histo_vmax_log[ivar] - Global::histo_vmin_log[ivar])/numValues;
+    } else {
+        xmin = Global::histo_vmin[ivar];
+        width = (Global::histo_vmax[ivar] - Global::histo_vmin[ivar])/numValues;
+    }
+    makeHistoPlot(numValues,xmin,width,values);
+}
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void MainWindow::processGroupBoxClick(QString text)
+{
+    LOG_QMSG("processGroupBoxClick: " + text);
+    QwtPlot *plot;
+
+    if (text.compare("Histo") == 0) {
+        LOG_MSG("save Histo plot");
+        bool use_HistoBar = radioButton_histotype_1->isChecked();
+        if (use_HistoBar) {
+            plot = qpHistoBar;
+            qpHistoLine->hide();
+        } else {
+            plot = qpHistoLine;
+            qpHistoBar->hide();
+        }
+    } else if (text.compare("FACS") == 0) {
+        LOG_MSG("save FACS plot");
+        plot = qpFACS;
+    } else {
+        return;
+    }
+
+    int w = plot->width();
+    int h = plot->height();
+    QPixmap pixmap(w, h);
+    pixmap.fill(Qt::white); // Qt::transparent ?
+
+    QwtPlotPrintFilter filter;
+    int options = QwtPlotPrintFilter::PrintAll;
+    options &= ~QwtPlotPrintFilter::PrintBackground;
+    options |= QwtPlotPrintFilter::PrintFrameWithScales;
+    filter.setOptions(options);
+
+    plot->print(pixmap, filter);
+
+//		QString fileName = getImageFile();
+    QString fileName = QFileDialog::getSaveFileName(0,"Select image file", ".",
+        "Image files (*.png *.jpg *.tif *.bmp)");
+    if (fileName.isEmpty()) {
+        return;
+    }
+    pixmap.save(fileName,0,-1);
+}
 
 //-------------------------------------------------------------
 // Loops through the workingParameterList and fills in the GUI.
@@ -1249,6 +1566,9 @@ void MainWindow::runServer()
     connect(exthread, SIGNAL(action_VTK()), this, SLOT(goToVTK()));
     connect(exthread, SIGNAL(facs_update()), this, SLOT(showFACS()));
     connect(this, SIGNAL(facs_update()), this, SLOT(showFACS()));
+    connect(exthread, SIGNAL(histo_update()), this, SLOT(showHisto()));
+    connect(this, SIGNAL(histo_update()), this, SLOT(showHisto()));
+    connect(exthread, SIGNAL(setupC()), this, SLOT(setupConstituents()));
     connect(exthread, SIGNAL(redimension(int)), this, SLOT(redimensionCellArrays(int)));
 	exthread->paused = false;
 	exthread->stopped = false;
@@ -1313,6 +1633,8 @@ void MainWindow::preConnection()
     LOG_MSG("did initializeGraphs");
     printf("nGraphs: %d\n",nGraphs);
     fflush(stdout);
+
+    Global::nhisto_bins = lineEdit_nhistobins->text().toInt();
 
     posdata = false;
 //	if (cbox_savepos->isChecked()) {

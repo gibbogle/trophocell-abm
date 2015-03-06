@@ -470,19 +470,19 @@ do k = 1,n
 enddo
 end subroutine
 
+
 !-----------------------------------------------------------------------------------------
 !-----------------------------------------------------------------------------------------
 subroutine save_positions
 integer :: kcell, site(3)
 
 write(nflog,'(i6,$)') istep
-do kcell = 1,20
-	site = cell_list(kcell)%site
-	write(nflog,'(2i5,$)') site(1:2)
+do kcell = 1,n_cell_positions
+    site = cell_list(kcell)%site
+    write(nflog,'(2i5,$)') site(1:2)
 enddo
 write(nflog,*)
 end subroutine
-
 
 !-----------------------------------------------------------------------------------------
 ! Various logging counters are initialized here.
@@ -641,6 +641,199 @@ open(nffacs, file=filename, status='replace')
 close(nffacs)
 end subroutine
 
+!-----------------------------------------------------------------------------------------
+! nhisto is the number of histogram boxes
+! vmin(ivar),vmax(ivar) are the minimum,maximums value for variable ivar
+!
+! Compute 3 distributions: 1 = both cell types
+!                          2 = type 1
+!                          3 = type 2
+! Stack three cases in vmax() and histo_data()
+!
+! No, for tropho assume just a single cell type, but leave code in place for multiple cell types.
+! For now there are just two variables:
+!   distance from starting position
+!   angle in degrees made by total displacement vector
+!-----------------------------------------------------------------------------------------
+subroutine get_histo(nhisto, histo_data, vmin, vmax, histo_data_log, vmin_log, vmax_log) BIND(C)
+!DEC$ ATTRIBUTES DLLEXPORT :: get_histo
+use, intrinsic :: iso_c_binding
+integer(c_int),value :: nhisto
+real(c_double) :: vmin(*), vmax(*), histo_data(*)
+real(c_double) :: vmin_log(*), vmax_log(*), histo_data_log(*)
+real(REAL_KIND) :: val, val_log, dx, dy
+integer :: n(3), i, ih, k, kcell, ict, ichemo, ivar, nvars, var_index(32), nct
+integer,allocatable :: cnt(:,:,:)
+real(REAL_KIND),allocatable :: dv(:,:), valmin(:,:), valmax(:,:)
+integer,allocatable :: cnt_log(:,:,:)
+real(REAL_KIND),allocatable :: dv_log(:,:), valmin_log(:,:), valmax_log(:,:)
+
+!write(nflog,*) 'get_histo'
+nct = 1	! number of cell types
+nvars = 2
+
+allocate(cnt(nct,nvars,nhisto))
+allocate(dv(nct,nvars))
+allocate(valmin(nct,nvars))
+allocate(valmax(nct,nvars))
+allocate(cnt_log(nct,nvars,nhisto))
+allocate(dv_log(nct,nvars))
+allocate(valmin_log(nct,nvars))
+allocate(valmax_log(nct,nvars))
+cnt = 0
+valmin = 0
+valmax = -1.0e10
+cnt_log = 0
+valmin_log = 1.0e10
+valmax_log = -1.0e10
+n = 0
+do kcell = 1,nlist
+!	if (cell_list(kcell)%state == DEAD) cycle
+!	ict = cell_list(kcell)%celltype
+	ict = 1
+	dx = cell_list(kcell)%dtotal(1)
+	dy = cell_list(kcell)%dtotal(2)
+!	write(nflog,*) kcell,dx,dy
+	do ivar = 1,nvars
+		if (ivar == 1) then
+			val = sqrt(dx*dx + dy*dy)
+		elseif (ivar == 2) then
+			val = atan2(dy,dx)*180/PI
+		endif
+!		valmax(ict+1,ivar) = max(valmax(ict+1,ivar),val)	! cell type 1 or 2
+		valmax(1,ivar) = max(valmax(1,ivar),val)			! both
+		if (val <= 1.0e-8) then
+			val_log = -8
+		else
+			val_log = log10(val)
+		endif
+!		valmin_log(ict+1,ivar) = min(valmin_log(ict+1,ivar),val_log)	! cell type 1 or 2
+		valmin_log(1,ivar) = min(valmin_log(1,ivar),val_log)			! both
+!		valmax_log(ict+1,ivar) = max(valmax_log(ict+1,ivar),val_log)	! cell type 1 or 2
+		valmax_log(1,ivar) = max(valmax_log(1,ivar),val_log)			! both
+	enddo
+!	n(ict+1) = n(ict+1) + 1
+	n(1) = n(1) + 1
+enddo
+
+dv = (valmax - valmin)/nhisto
+!write(nflog,*) 'dv'
+!write(nflog,'(e12.3)') dv
+dv_log = (valmax_log - valmin_log)/nhisto
+!write(nflog,*) 'dv_log'
+!write(nflog,'(e12.3)') dv_log
+do kcell = 1,nlist
+!	if (cell_list(kcell)%state == DEAD) cycle
+!	ict = cell_list(kcell)%celltype
+	ict = 1
+	dx = cell_list(kcell)%dtotal(1)
+	dy = cell_list(kcell)%dtotal(2)
+	do ivar = 1,nvars
+		if (ivar == 1) then
+			val = sqrt(dx*dx + dy*dy)
+		elseif (ivar == 2) then
+			val = atan2(dy,dx)*180/PI
+		endif
+		k = (val-valmin(1,ivar))/dv(1,ivar) + 1
+		k = min(k,nhisto)
+		k = max(k,1)
+		cnt(1,ivar,k) = cnt(1,ivar,k) + 1
+!		k = (val-valmin(ict+1,ivar))/dv(ict+1,ivar) + 1
+!		k = min(k,nhisto)
+!		k = max(k,1)
+!		cnt(ict+1,ivar,k) = cnt(ict+1,ivar,k) + 1
+		if (val <= 1.0e-8) then
+			val_log = -8
+		else
+			val_log = log10(val)
+		endif
+		k = (val_log-valmin_log(1,ivar))/dv_log(1,ivar) + 1
+		k = min(k,nhisto)
+		k = max(k,1)
+		cnt_log(1,ivar,k) = cnt_log(1,ivar,k) + 1
+!		k = (val_log-valmin_log(ict+1,ivar))/dv_log(ict+1,ivar) + 1
+!		k = min(k,nhisto)
+!		k = max(k,1)
+!		cnt_log(ict+1,ivar,k) = cnt_log(ict+1,ivar,k) + 1
+	enddo
+enddo
+
+do i = 1,1
+	if (n(i) == 0) then
+		vmin((i-1)*nvars+1:i*nvars) = 0
+		vmax((i-1)*nvars+1:i*nvars) = 0
+		histo_data((i-1)*nvars*nhisto+1:i*nhisto*nvars) = 0
+		vmin_log((i-1)*nvars+1:i*nvars) = 0
+		vmax_log((i-1)*nvars+1:i*nvars) = 0
+		histo_data_log((i-1)*nvars*nhisto+1:i*nhisto*nvars) = 0
+	else
+		do ivar = 1,nvars
+			vmin((i-1)*nvars+ivar) = valmin(i,ivar)
+			vmax((i-1)*nvars+ivar) = valmax(i,ivar)
+			do ih = 1,nhisto
+				k = (i-1)*nvars*nhisto + (ivar-1)*nhisto + ih
+				histo_data(k) = (100.*cnt(i,ivar,ih))/n(i)
+			enddo
+			vmin_log((i-1)*nvars+ivar) = valmin_log(i,ivar)
+			vmax_log((i-1)*nvars+ivar) = valmax_log(i,ivar)
+			do ih = 1,nhisto
+				k = (i-1)*nvars*nhisto + (ivar-1)*nhisto + ih
+				histo_data_log(k) = (100.*cnt_log(i,ivar,ih))/n(i)
+			enddo
+		enddo
+	endif
+enddo
+deallocate(cnt)
+deallocate(dv)
+deallocate(valmin)
+deallocate(valmax)
+deallocate(cnt_log)
+deallocate(dv_log)
+deallocate(valmin_log)
+deallocate(valmax_log)
+end subroutine
+
+!-----------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------
+subroutine get_constituents(nvars,cvar_index,nvarlen,name_array,narraylen) BIND(C)
+!DEC$ ATTRIBUTES DLLEXPORT :: get_constituents
+use, intrinsic :: iso_c_binding
+character(c_char) :: name_array(0:*)
+integer(c_int) :: nvars, cvar_index(0:*), nvarlen, narraylen
+integer :: ivar, k
+character*(24) :: name
+character(c_char) :: c
+
+write(nflog,*) 'get_constituents'
+nvarlen = 12
+ivar = 0
+k = ivar*nvarlen
+cvar_index(ivar) = 0
+name = 'Distance'
+call copyname(name,name_array(k),nvarlen)
+ivar = ivar + 1
+k = ivar*nvarlen
+cvar_index(ivar) = 1
+name = 'Angle'
+call copyname(name,name_array(k),nvarlen)
+nvars = ivar + 1
+write(nflog,*) 'did get_constituents'
+end subroutine
+
+!-----------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------
+subroutine copyname(name,name_array,n)
+character*(*) :: name
+character :: name_array(*)
+integer :: n
+integer :: k
+
+do k = 1,n
+	name_array(k) = name(k:k)
+enddo
+end subroutine
+
+
 !--------------------------------------------------------------------------------
 ! Pass a list of cell positions and associated data
 !--------------------------------------------------------------------------------
@@ -752,8 +945,10 @@ res = 0
 dbug = .false.
 ok = .true.
 istep = istep + 1
+if (n_cell_positions > 0) then
+	call save_positions
+endif
 tnow = istep*DELTA_T
-call save_positions
 if (mod(istep,240) == 0) then
 	write(logmsg,*) 'simulate_step: ',istep
 	call logger(logmsg)
@@ -1140,24 +1335,20 @@ character*(128) :: infile, outfile
 logical :: ok, success, isopen
 integer :: i, res
 
-write(*,*) 'execute: inbuflen, outbuflen: ',inbuflen, outbuflen
 use_CPORT1 = .false.	! DIRECT CALLING FROM Fortran, C++
 infile = ''
 do i = 1,inbuflen
 	infile(i:i) = infile_array(i)
 enddo
-write(*,*) infile
 outfile = ''
 do i = 1,outbuflen
 	outfile(i:i) = outfile_array(i)
 enddo
 
-write(*,*) 'open log file'
 inquire(unit=nflog,OPENED=isopen)
 if (.not.isopen) then
     open(nflog,file='tropho.log',status='replace')
 endif
-write(*,*) 'opened log file'
 awp_0%is_open = .false.
 awp_1%is_open = .false.
 
@@ -1198,7 +1389,6 @@ if (use_tcp) then
 		return
 	endif
 endif
-write(*,*) 'do setup'
 call setup(ncpu,infile,outfile,ok)
 if (ok) then
 	clear_to_send = .true.

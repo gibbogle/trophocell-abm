@@ -169,6 +169,7 @@ void ExecThread::run()
     sprintf(msg,"summary_interval: %d nt_vtk: %d",Global::summary_interval,Global::nt_vtk);
     LOG_MSG(msg);
     Global::mutex1.lock();
+    emit setupC();
     get_summary(Global::summaryData);
     LOG_MSG("did get_summary");
 //    getProfiles();
@@ -214,7 +215,8 @@ void ExecThread::run()
             Global::mutex1.unlock();
             emit summary();		// Emit signal to update summary plots, at hourly intervals
             if (Global::showingFACS || Global::recordingFACS) {
-                emit facs_update();
+//                emit facs_update();
+                emit histo_update();
             }
 		}
 		if (stopped) break;
@@ -287,12 +289,21 @@ void ExecThread::getProfiles()
 void ExecThread::getFACS()
 {
     get_nfacs(&Global::nFACS_cells);
-    if (!Global::FACS_data || Global::nFACS_cells*Global::nFACS_vars > Global::nFACS_dim) {
+    if (!Global::FACS_data || Global::nFACS_cells*Global::nvars_used > Global::nFACS_dim) {
         if (Global::FACS_data) free(Global::FACS_data);
-        Global::nFACS_dim = 3*Global::nFACS_cells*Global::nFACS_vars;
+        Global::nFACS_dim = 3*Global::nFACS_cells*Global::nvars_used;   // 3* to avoid excessive malloc/free
         Global::FACS_data = (double *)malloc(Global::nFACS_dim*sizeof(double));
     }
     get_facs(Global::FACS_data);
+    if (!Global::histo_data || Global::nhisto_bins*Global::nvars_used > Global::nhisto_dim) {
+        if (Global::histo_data) free(Global::histo_data);
+        if (Global::histo_data_log) free(Global::histo_data_log);
+        Global::nhisto_dim = 6*Global::nhisto_bins*Global::nvars_used;   // 2*3 to avoid excessive malloc/free (only 3* used)
+        Global::histo_data = (double *)malloc(Global::nhisto_dim*sizeof(double));
+        Global::histo_data_log = (double *)malloc(Global::nhisto_dim*sizeof(double));
+    }
+    get_histo(Global::nhisto_bins, Global::histo_data, Global::histo_vmin, Global::histo_vmax,
+              Global::histo_data_log, Global::histo_vmin_log, Global::histo_vmax_log);
 }
 
 //-----------------------------------------------------------------------------------------

@@ -31,6 +31,11 @@ using namespace std;
 #include "qmylabel.h"
 #include "qmycheckbox.h"
 
+#include <qwt_plot.h>
+#include <qwt_plot_grid.h>
+#include <qwt_interval_data.h>
+#include "histogram_item.h"
+
 QT_BEGIN_NAMESPACE
 class QAction;
 class QMenu;
@@ -132,21 +137,29 @@ public slots:
     void displayScene();
 	void showSummary();
     void showFACS();
+    void showHisto();
     void startRecorderVTK();
     void stopRecorderVTK();
     void startRecorderFACS();
     void stopRecorderFACS();
     void redimensionCellArrays(int nbond_size);
     bool getVideoFileInfo(int *nframes, QString *itemFormat, QString *itemCodec, QString *videoFileName);
+    void on_buttonGroup_celltype_buttonClicked(QAbstractButton* button);
+    void on_buttonGroup_histotype_buttonClicked(QAbstractButton* button);
+    void on_checkBox_histo_logscale_toggled();
+    void processGroupBoxClick(QString text);
+    void setupConstituents();
 
 signals:
     void facs_update();
+    void histo_update();
 
 private:
     void createActions();
 	void createLists();
     void initDistPlots();
     void initFACSPlot();
+    void initHistoPlot();
     void setupParamList();
 	void loadParams();
 	void reloadParams();
@@ -175,6 +188,9 @@ private:
     void setGraphsActive();
     void showGradient2D();
 	void showGradient3D();
+    void test_histo();
+    void makeHistoPlot(int numValues, double xmin, double width, QVector<double> values);
+    void setConstituentButtons(QGroupBox *gbox, QButtonGroup *bg, QVBoxLayout **vbox, QRadioButton ***rb_list, QString tag);
 
     void showmdiAreaSize();
     double erf(double z);
@@ -235,6 +251,11 @@ private:
 
     QwtPlot *qpFACS;
     QwtPlotCurve *curveFACS;
+    QwtPlot *qpHistoBar, *qpHistoLine;
+    HistogramItem *histogram;
+    QButtonGroup *buttonGroup_histo;
+    QVBoxLayout *vbox_histo;
+    QRadioButton **histo_rb_list;
 
 	int nDistPts;
 	int nTicks;

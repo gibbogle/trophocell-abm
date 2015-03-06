@@ -159,6 +159,7 @@ read(nfcell,*) grad_amp(2)					! chemokine #2 gradient amplitude
 read(nfcell,*) grad_dir(2)					! chemokine #2 gradient direction (deg)
 read(nfcell,*) BG_flow_amp				    ! background velocity amplitude (um/min)
 read(nfcell,*) BG_flow_dir		 	        ! background velocity direction (deg)
+read(nfcell,*) n_cell_positions				! number of cell positions to save each time step
 close(nfcell)
 
 call logger('Finished reading cell parameter file')
@@ -399,7 +400,6 @@ end subroutine
 ! Create a new T cell.
 ! We need to give a progeny cell (the result of cell division) the same ID as its parent.
 ! This implies that there needs to be a flag to indicate that the cell results from division.
-! Need to check what is being done with CD69, S1PR1
 !-----------------------------------------------------------------------------------------
 subroutine create_Tcell(kcell,cell,site,ctype,gen,tag,region,dividing,ok)
 type(cell_type) :: cell
@@ -422,6 +422,7 @@ cell%ctype = ctype
 cell%tag = tag
 cell%step = 0
 cell%lastdir = random_int(1,6,kpar)
+cell%dtotal = 0
 
 end subroutine
 

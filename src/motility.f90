@@ -846,7 +846,11 @@ if (try_S1) then
 		return
 	endif
 	site2 = site1
+else
+	cell%dtotal(1:2) = cell%dtotal(1:2) + jumpvec2D(1:2,irel) 
 endif
+cell%dtotal = cell%dtotal + nv
+
 ! move to kslot2 at site2
 cell%site = site2
 occupancy(site2(1),site2(2),site2(3))%indx(kslot2) = kcell

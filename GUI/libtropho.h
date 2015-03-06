@@ -25,6 +25,9 @@ void get_summary(int *);
 //void get_profile_dcbindtime(double *, double *, int *);
 void get_nfacs(int *);
 void get_facs(double *);
+void get_histo(int, double *, double *, double *, double *, double *, double *);
+
+void get_constituents(int *, int *, int *, char *, int *);
 //
 //
 #ifdef __cplusplus

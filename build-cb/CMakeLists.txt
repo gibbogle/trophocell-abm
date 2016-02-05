@@ -1,7 +1,7 @@
 # CMake project file for tropho-abm
 
 cmake_minimum_required (VERSION 2.6)
-project (tropho-abm)
+project (tropho2D-abm)
 
 enable_language (Fortran)
 #enable_language (C)
@@ -48,7 +48,7 @@ else (Fortran_COMPILER_NAME STREQUAL "gfortran")
 #  message ("No optimized Fortran compiler flags are known, we just try -O2...")
   set (CMAKE_Fortran_FLAGS_RELEASE "-O2 -cpp -ffree-line-length-none -fopenmp")
   set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -cpp -ffree-line-length-none -fopenmp")
-  set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--output-def,libtropho-abm.def")
+  set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--output-def,libtropho2D-abm.def")
 endif (Fortran_COMPILER_NAME STREQUAL "ifort")
 
 set (SOURCES 
@@ -68,8 +68,8 @@ set (SOURCES
 #set (EXECUTABLES "NORMA.exe" ${NMPROGRAMS})
 #set (SCRIPTS "gen_pert.sh" "pert_multi_mode.sh")
 
-add_library (tropho-abm SHARED ${SOURCES})
-target_link_libraries(tropho-abm libws2_32.a libgomp.a)
+add_library (tropho2D-abm SHARED ${SOURCES})
+target_link_libraries(tropho2D-abm libws2_32.a libgomp.a)
 #add_executable (tropho_main ../src/tropho_main.f90)
 #target_link_libraries(tropho_main tropho-abm)
 #set_target_properties(tropho_main PROPERTIES LINKER_LANGUAGE Fortran)

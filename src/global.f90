@@ -84,8 +84,8 @@ real(REAL_KIND), parameter :: CFSE_std = 0.05
 ! Run parameters
 
 ! Parameters and switches for calibration etc.
-logical, parameter :: calibrate_motility = .false.
-logical, parameter :: motility_param_range = .false.
+logical, parameter :: calibrate_motility = .true.
+logical, parameter :: motility_param_range = .true.
 logical, parameter :: motility_save_paths = .false.
 logical, parameter :: calibrate_diffusion = .false.
 integer, parameter :: n_multiple_runs = 1

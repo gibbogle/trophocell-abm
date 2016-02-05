@@ -391,7 +391,9 @@ do kcell = 1,nlist
         slot = 2
 	endif
 	call chemo_jumper2D(kcell,indx,slot,go,kpar)
-	call flow_jumper2D(kcell,indx,slot,go,kparr)
+	if (.not.calibrate_motility) then
+		call flow_jumper2D(kcell,indx,slot,go,kparr)
+	endif
 enddo
 
 
@@ -675,6 +677,11 @@ do irel = 1,nreldir2D
             saveslots2a(dir1) = fullslots2
         else
 	        nout = nout + 1
+	        if (calibrate_motility) then
+		        write(nflog,*) 'Error: cell goes out of the grid'
+		        write(nflog,*) 'increase NX'
+			    stop
+			endif
 		endif
 	endif
 	savesite2a(:,dir1) = site2
@@ -683,15 +690,12 @@ if (sum(p) == 0) then
     go = .false.
     return
 endif
-!write(*,'(a,8f8.4)') 'before: ',p/sum(p)
 
 if (ischemo) then
 	psave = p
 	call chemo_probs_pre2D(p,rv,f)     ! this is the precomputed version
 endif
 psum = sum(p)
-!write(*,'(a,8f8.4)') 'after: ',p
-!stop
 
 if (psum == 0) then
 	go = .false.
@@ -1128,6 +1132,7 @@ real(REAL_KIND) :: dt,Cm
 integer :: k,j,d(3),d2,d2sum
 real(REAL_KIND), allocatable :: r2mean(:)
 
+write(nflog,*) 'nvar, ntagged: ',nvar,ntagged
 allocate(r2mean(nvar))
 
 do k = 1,nvar
@@ -1139,10 +1144,8 @@ do k = 1,nvar
     enddo
     r2mean(k) = d2sum/ntagged
 enddo
-write(*,'(10f6.1)') r2mean
 call bestfit(r2mean,nvar0,nvar,dt,Cm)
 Cm = Cm*DELTA_X*DELTA_X
-!write(*,*) 'Cm: ',Cm
 
 deallocate(r2mean)
 
@@ -1182,7 +1185,7 @@ if (SIMULATE_2D) then
 else
 	Cm = a/6
 endif
-write(*,*) 'a,b: ',a,b
+write(nflog,*) 'a,b: ',a,b
 
 end subroutine
 

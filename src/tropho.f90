@@ -168,13 +168,14 @@ integer :: NTcells, nvar0, nvar, ntime2
 integer :: ns = 10000
 integer :: npaths = 20
 integer :: npos = 301
-integer :: nbeta = 30, nrho = 50
+!integer :: nbeta = 30, nrho = 50
+integer :: nbeta = 10, nrho = 10
 integer :: ibeta, irho, kpath
 real(REAL_KIND) :: dt, time1 = 5, time2 = 15   ! minutes (used for ICB paper results)
 real(REAL_KIND) :: tagrad = 10
 real(REAL_KIND) :: dbeta, drho
-real(REAL_KIND) :: betamin = 0.25, betamax = 0.9		! 0.25 - 0.90 for Model_N, 0.15 - 0.80 for Model_M
-real(REAL_KIND) :: rhomin = 0.20, rhomax = 0.85			! 0.20 - 0.85 for Model_N, 0.20 - 0.85 for Model_M
+real(REAL_KIND) :: betamin = 0.025, betamax = 0.25		! 0.25 - 0.90 for Model_N, 0.15 - 0.80 for Model_M
+real(REAL_KIND) :: rhomin = 0.75, rhomax = 0.95			! 0.20 - 0.85 for Model_N, 0.20 - 0.85 for Model_M
 real(REAL_KIND) :: Cm,speed,ssum,d
 integer, allocatable :: tagid(:), tagseq(:), tagsite(:,:,:), pathcell(:)
 integer, allocatable :: prevsite(:,:)   ! for mean speed computation
@@ -182,13 +183,28 @@ real(REAL_KIND), allocatable :: Cm_array(:,:), S_array(:,:)
 type(cell_type) :: cell
 logical :: ok
 
+write(*,*)
+write(*,*) '--------------------'
 write(*,*) 'motility_calibration'
+write(*,*) '--------------------'
 
 NTcells = NX*NY*NZ
 if (motility_save_paths) then
 !        allocate(path(3,npaths,0:nvar))
     allocate(pathcell(npaths))
 endif
+
+write(*,*) 'Enter range of beta (betamin, betamax):'
+read(*,*) betamin,betamax
+write(*,*) 'Enter number of beta values:'
+read(*,*) nbeta
+write(*,*) 'Enter range of rho (rhomin, rhomax):'
+read(*,*) rhomin,rhomax
+write(*,*) 'Enter number of rho values:'
+read(*,*) nrho
+write(*,*)
+
+time2 = 420
 
 ntime2 = time2
 nvar0 = time1
@@ -225,37 +241,38 @@ do ibeta = 1,nbeta
 	    beta = betamin + (ibeta-1)*dbeta
 	    write(*,'(a,2i3,2f6.2)') ' beta, rho: ',ibeta,irho,BETA,RHO
 	    call compute_dirprobs
-    	    call PlaceCells(ok)
-    	    if (.not.ok) stop
-!            call make_split(.true.)
-            if (nlist > 0) then
-    	        write(*,*) 'make tag list: NTcells,nlist,ntagged: ',NTcells,nlist,ntagged
+	    call PlaceCells(ok)
+	    if (.not.ok) stop
+        if (nlist > 0) then
+!	        write(*,*) 'make tag list: NTcells,nlist,ntagged: ',NTcells,nlist,ntagged
 
-                allocate(tagseq(NTcells))
-                allocate(tagid(ntagged))
-                allocate(tagsite(3,ntagged,0:nvar))
-                tagseq = 0
-                k = 0
-    	        kpath = 0
-                do ic = 1,nlist
-                    if (cell_list(ic)%tag == TAGGED_CELL) then
-                        id = cell_list(ic)%ID
-                        k = k+1
-                        tagid(k) = id
-                        tagseq(id) = k
-                        tagsite(:,k,0) = cell_list(ic)%site
-						if (motility_save_paths) then
-							if (kpath < npaths) then
-								kpath = kpath + 1
-								pathcell(kpath) = ic
-							endif
+            allocate(tagseq(NTcells))
+            allocate(tagid(ntagged))
+            allocate(tagsite(3,ntagged,0:nvar))
+            tagseq = 0
+            k = 0
+	        kpath = 0
+            do ic = 1,nlist
+                if (cell_list(ic)%tag == TAGGED_CELL) then
+                    id = cell_list(ic)%ID
+                    k = k+1
+                    tagid(k) = id
+                    tagseq(id) = k
+                    tagsite(:,k,0) = cell_list(ic)%site
+					if (motility_save_paths) then
+						if (kpath < npaths) then
+							kpath = kpath + 1
+							pathcell(kpath) = ic
 						endif
-                    endif
-                enddo
-            endif
+					endif
+                endif
+            enddo
+        endif
 
-        ns = min(ns,nlist)
-        allocate(prevsite(3,ns))
+		if (ibeta == 1 .and. irho == 1) then
+	        ns = min(ns,nlist)
+		    allocate(prevsite(3,ns))
+		endif
         do ic = 1,ns
             prevsite(:,ic) = cell_list(ic)%site
         enddo
@@ -275,9 +292,9 @@ do ibeta = 1,nbeta
 				istep = istep + 1
                 call mover(ok)
                 if (.not.ok) stop
-                if (.not.SIMULATE_2D) then
-	                call squeezer(.false.)
-	            endif
+!                if (.not.SIMULATE_2D) then
+!	                call squeezer(.false.)
+!	            endif
                 do ic = 1,ns
                     ds = cell_list(ic)%site - prevsite(:,ic)
                     prevsite(:,ic) = cell_list(ic)%site
@@ -291,7 +308,7 @@ do ibeta = 1,nbeta
                     endif
                 endif
             enddo
-            write(*,*) 'speed: ',ssum/(ns*nsteps_per_min*imin)
+!            write(*,*) 'speed: ',ssum/(ns*nsteps_per_min*imin)
 
             do ic = 1,nlist
                 cell = cell_list(ic)
@@ -299,14 +316,13 @@ do ibeta = 1,nbeta
                     id = cell%ID
                     k = tagseq(id)
                     tagsite(:,k,imin) = cell%site
-!                   if (k < 20) write(*,*) 'site: ',cell%ID,cell%site
                 endif
             enddo
         enddo
-
         call compute_Cm(tagsite,ntagged,nvar0,nvar,dt,Cm)
         speed = ssum/(ns*nvar*nsteps_per_min)
         write(*,'(a,2f8.2)') 'speed, Cm: ',speed,Cm
+        write(nfout,'(a,4f8.3)') 'beta, rho, speed, Cm: ',beta,rho,speed,Cm
         if (allocated(tagid))   deallocate(tagid)
         if (allocated(tagseq))  deallocate(tagseq)
         if (allocated(tagsite)) deallocate(tagsite)

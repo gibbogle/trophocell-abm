@@ -588,6 +588,14 @@ if (.not.SIMULATE_2D) then
 	return
 endif
 
+do x = 1,NX
+	do y = 1,NY
+		do z = 1,NZ
+			occupancy(x,y,z)%indx = 0
+		enddo
+	enddo
+enddo
+
 istep = 0
 lastID = 0
 ntagged  = 0
@@ -612,6 +620,10 @@ do
 	        tag = 0
             call create_Tcell(kcell,cell_list(kcell),site,ctype,gen,tag,region,.false.,ok)
             if (.not.ok) return
+            if (calibrate_motility) then
+	            cell_list(kcell)%tag = TAGGED_CELL
+	            ntagged = ntagged + 1
+	        endif
             occupancy(x,y,z)%indx(1) = kcell
 			if (kcell == NTcells0) exit
 		endif
@@ -620,7 +632,6 @@ enddo
 
 nlist = NTcells0
 NTcells = NTcells0
-
 end subroutine
 
 end module
